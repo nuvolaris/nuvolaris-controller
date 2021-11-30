@@ -1,0 +1,36 @@
+version: '3'
+env:
+  NAME: openwhisk-standalone
+  TAG: neo-latest
+  DOCKER_URL: https://download.docker.com/linux/static/stable/x86_64/docker-18.06.3-ce.tgz
+  WSK_URL: https://github.com/apache/openwhisk-cli/releases/download/1.2.0/OpenWhisk_CLI-1.2.0-linux-amd64.tgz
+
+tasks:
+
+  build:
+    deps: 
+      - download
+      - openwhisk
+    cmd:
+      - docker build . -t $NAME:$TAG
+
+  download:
+    cmds:
+      - curl -sL $DOCKER_URL | tar xzvf -
+      - mkdir wsk && curl -sL $WSK_URL | tar xzvf - -C wsk
+    generates:
+      - wsk/wsk
+      - docker/docker
+
+  openwhisk:
+    dir: openwhisk
+    cmds:
+      - ./gradlew -DskipTests :core:standalone:build
+    generates:
+      - openwhisk/bin/openwhisk-standalone.jar
+
+  clean:
+    cmds:
+      - cd openwhisk && ./gradlew clean
+      - rm -Rvf wsk
+      - rm -Rvf docker
