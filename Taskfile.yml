@@ -11,23 +11,23 @@ tasks:
     deps: 
       - download
       - openwhisk
-    cmd:
-      - docker build . -t $NAME:$TAG
+    cmds:
+      - docker build . -t ghcr.io/nuvolaris/$NAME:$TAG
 
   download:
     cmds:
       - curl -sL $DOCKER_URL | tar xzvf -
-      - mkdir wsk && curl -sL $WSK_URL | tar xzvf - -C wsk
-    generates:
-      - wsk/wsk
-      - docker/docker
+      - mkdir -p wsk ; curl -sL $WSK_URL | tar xzvf - -C wsk
+    status:
+      - test -f wsk/wsk
+      - test -d docker
 
   openwhisk:
     dir: openwhisk
     cmds:
       - ./gradlew -DskipTests :core:standalone:build
-    generates:
-      - openwhisk/bin/openwhisk-standalone.jar
+    status:
+      - test -f bin/openwhisk-standalone.jar
 
   clean:
     cmds:
