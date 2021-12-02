@@ -1,5 +1,6 @@
 version: '3'
 env:
+  REPO: ghcr.io/nuvolaris
   NAME: openwhisk-standalone
   TAG: neo-latest
   DOCKER_URL: https://download.docker.com/linux/static/stable/x86_64/docker-18.06.3-ce.tgz
@@ -7,12 +8,18 @@ env:
 
 tasks:
 
+  build-and-push:
+    deps:
+      - build
+    cmds:
+      - docker push $REPO/$NAME:$TAG
+
   build:
     deps: 
       - download
       - openwhisk
     cmds:
-      - docker build . -t ghcr.io/nuvolaris/$NAME:$TAG
+      - docker build . -t $REPO/$NAME:$TAG
 
   download:
     cmds:
