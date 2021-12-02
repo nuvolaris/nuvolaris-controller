@@ -1,0 +1,43 @@
+version: '3'
+env:
+  REPO: ghcr.io/nuvolaris
+  NAME: openwhisk-standalone
+  TAG: neo-latest
+  DOCKER_URL: https://download.docker.com/linux/static/stable/x86_64/docker-18.06.3-ce.tgz
+  WSK_URL: https://github.com/apache/openwhisk-cli/releases/download/1.2.0/OpenWhisk_CLI-1.2.0-linux-amd64.tgz
+
+tasks:
+
+  build-and-push:
+    deps:
+      - build
+    cmds:
+      - docker push $REPO/$NAME:$TAG
+
+  build:
+    deps: 
+      - download
+      - openwhisk
+    cmds:
+      - docker build . -t $REPO/$NAME:$TAG
+
+  download:
+    cmds:
+      - curl -sL $DOCKER_URL | tar xzvf -
+      - mkdir -p wsk ; curl -sL $WSK_URL | tar xzvf - -C wsk
+    status:
+      - test -f wsk/wsk
+      - test -d docker
+
+  openwhisk:
+    dir: openwhisk
+    cmds:
+      - ./gradlew -DskipTests :core:standalone:build
+    status:
+      - test -f bin/openwhisk-standalone.jar
+
+  clean:
+    cmds:
+      - cd openwhisk && ./gradlew clean
+      - rm -Rvf wsk
+      - rm -Rvf docker
