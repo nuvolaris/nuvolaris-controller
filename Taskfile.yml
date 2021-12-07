@@ -24,7 +24,7 @@ env:
 
 tasks:
 
- buildx-and-push:
+  buildx-and-push:
     deps:
       - openwhisk
     cmds:
