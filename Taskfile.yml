@@ -27,8 +27,7 @@ tasks:
     deps:
       - openwhisk
     cmds:
-     - docker buildx build --platform linux/amd64,linux/arm64 -t $REPO/$IMAGE:$TAG .
-     - docker push $REPO/$IMAGE:$TAG
+     - docker buildx build --platform linux/amd64,linux/arm64 -t $REPO/$IMAGE:$TAG . --push
 
   build:
     deps: 
