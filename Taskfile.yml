@@ -18,8 +18,7 @@
 version: '3'
 env:
   REPO: ghcr.io
-  USER: nuvolaris
-  NAME: openwhisk-standalone
+  IMAGE: nuvolaris/openwhisk-standalone
   TAG: neo-latest
 
 tasks:
@@ -28,14 +27,14 @@ tasks:
     deps:
       - openwhisk
     cmds:
-     - docker buildx build --platform linux/amd64,linux/arm64 -t $REPO/$USER/$NAME:$TAG .
-     - docker push $REPO/$USER/$NAME:$TAG
+     - docker buildx build --platform linux/amd64,linux/arm64 -t $REPO/$IMAGE:$TAG .
+     - docker push $REPO/$IMAGE:$TAG
 
   build:
     deps: 
       - openwhisk
     cmds:
-      - docker build . -t $NAME:$TAG
+      - docker build . -t $IMAGE:$TAG
 
   openwhisk:
     dir: openwhisk
