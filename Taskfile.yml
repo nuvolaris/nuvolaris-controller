@@ -48,4 +48,4 @@ tasks:
 
   setup:
     cmds:
-      - echo "Nothing to do."
+      - echo "Nothing to do (yet)."
