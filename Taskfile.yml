@@ -45,3 +45,7 @@ tasks:
   clean:
     cmds:
       - cd openwhisk && ./gradlew clean
+
+  setup:
+    cmds:
+      - echo "Nothing to do."
