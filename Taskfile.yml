@@ -42,6 +42,12 @@ tasks:
     status:
       - test -f bin/openwhisk-standalone.jar
 
+  run:
+    deps:
+      - openwhisk
+    cmds:
+      - java -jar bin/openwhisk-standalone.jar
+
   clean:
     cmds:
       - cd openwhisk && ./gradlew clean
