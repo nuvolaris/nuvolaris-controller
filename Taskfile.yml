@@ -16,6 +16,8 @@
 # under the License.
 #
 version: '3'
+vars:
+  OPENWHISK_IMAGE: ghcr.io/nuvolaris/openwhisk-standalone:neo-latest
 env:
   REPO: ghcr.io
   IMAGE: nuvolaris/openwhisk-standalone
@@ -55,3 +57,21 @@ tasks:
   setup:
     cmds:
       - echo "Nothing to do (yet)."
+
+  start: 
+    cmds: 
+      - >
+       docker run -ti
+       -p 3232:3232 -p 3233:3233
+       -v /var/run/docker.sock:/var/run/docker.sock
+       {{.OPENWHISK_IMAGE}}
+    interactive: true
+
+  start2: >
+    echo java
+    -Dwhisk.standalone.host.internal="$(hostname -i)" \
+    -Dwhisk.standalone.host.external="$IP" \
+    -jar /usr/lib/openwhisk-standalone.jar
+
+#HOST="$(hostname -i)"
+#java -Dwhisk.standalone.host.internal=$HOST -jar /usr/lib/openwhisk-standalone.jar
