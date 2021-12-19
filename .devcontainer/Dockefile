@@ -1,0 +1,5 @@
+FROM ghcr.io/nuvolaris/nuvolaris-devkit:neo-2021.1212.1530
+RUN  curl -fLo $HOME/.local/bin/cs https://git.io/coursier-cli-"$(uname | tr LD ld)" ;\
+  chmod +x $HOME/.local/bin/cs ;\
+  cs install bloop --only-prebuilt=true ;\
+  echo  'export PATH="$PATH:/home/nuvolaris/.local/share/coursier/bin"' >>$HOME/.bashrc
