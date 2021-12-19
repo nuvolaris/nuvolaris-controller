@@ -16,10 +16,8 @@
 // under the License.
 {
 	"name": "nuvolaris-controller",
-	//"image": "ghcr.io/nuvolaris/nuvolaris-devkit:neo-2021.1212.1530",
-	"build": {
-		"dockerfile": "Dockerfile"
-	},
+	"image": "ghcr.io/nuvolaris/nuvolaris-devkit:neo-2021.1219.1230",
+	//"build": { "dockerfile": "Dockerfile" },
 	"mounts": [
 		"source=/var/run/docker.sock,target=/var/run/docker-host.sock,type=bind"
 	],
