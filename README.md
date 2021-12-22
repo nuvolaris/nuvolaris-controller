@@ -25,4 +25,23 @@ It includes as a subrepo our fork of [apache/openwhisk](https://github.com/nuvol
 
 You can discuss it in the #[nuvolaris-controller](https://discord.gg/2weUATjvV7) discord channel and in the forum under the category [controller](https://github.com/nuvolaris/nuvolaris/discussions/categories/controller).
 
-Please read the [development document](https://github.com/nuvolaris/nuvolaris/blob/main/docs/DEVEL.md) for instructions how to setup the development environment and develop this module.
+## Developer Guide
+
+To develop with this repo, please use [VSCode](https://code.visualstudio.com/). You can use other IDEs if you want but for VSCode there is the configuration ready. Note that you need also Docker running.
+
+You can put it at work with the following procedure
+
+```
+git clone https://github.com/nuvolaris/nuvolaris-controller --recurse-submodules
+cd nuvolaris-controller
+code nuvolaris-controller.code-workspace
+```
+
+It will open and show a pop-up asking if you want to `Reopen in Container`.
+Click on it. Then open the Metals plugin (click on the icon that looks like an 'm').
+
+To import the project, click on `New Scala Project` (but do not create any project actually) then `import build`. This will activate the Metals plugin, it will import all the subprojects and make available all the features of the plugin.
+
+Check `Run doctor` to verify the projects has been imported correctly. An healthy import looks like this:
+
+![](./healthy-import.png)
