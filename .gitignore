@@ -16,9 +16,10 @@
 # under the License.
 #
 .*-version
-docker/
 wsk
 nodesource_setup.sh
 kubeconfig
-.metals
+.metals/
+docker/
+controller/
 

@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "openwhisk"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"workbench.colorCustomizations": {
+			"activityBar.background": "#520F4E",
+			"titleBar.activeBackground": "#72156D",
+			"titleBar.activeForeground": "#FEFCFE"
+		},
+		"files.watcherExclude": {
+			"**/target": true
+		}
+	}
+}

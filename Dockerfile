@@ -16,19 +16,22 @@
 # under the License.
 #
 FROM ubuntu:20.04 as builder
-# download required component
-ENV DOCKER_VERSION=18.06.3-ce
-ENV WSK_VERSION=1.2.0
-ENV DOCKER_BASE=https://download.docker.com/linux/static/stable
-ENV WSK_BASE=https://github.com/apache/openwhisk-cli/releases/download
-RUN apt-get update && apt-get -y install curl file
-RUN DOCKER_URL="$DOCKER_BASE/$(arch)/docker-$DOCKER_VERSION.tgz" ;\
-    curl -sL "$DOCKER_URL" | tar xzvf -
-RUN ARCH=amd64 ; test $(arch) = "aarch64" && ARCH=arm64 ;\
-    WSK_URL="$WSK_BASE/$WSK_VERSION/OpenWhisk_CLI-$WSK_VERSION-linux-$ARCH.tgz" ;\
-    curl -sL "$WSK_URL" | tar xzvf -
-FROM amazoncorretto:11
-COPY openwhisk/bin/openwhisk-standalone.jar /usr/lib/openwhisk-standalone.jar
-COPY --from=builder /docker/docker /usr/bin/docker
-COPY --from=builder /wsk /usr/bin/wsk
-ADD start.sh /usr/bin/start.sh
+# configure dpkg && timezone
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+ENV TZ=Europe/London
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+# add docker and java (amazon corretto) repos
+RUN apt-get update && apt-get -y upgrade &&\
+    apt-get -y install curl wget gpg software-properties-common apt-utils unzip vim
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor > /usr/share/keyrings/docker-archive-keyring.gpg &&\
+    wget -O- https://apt.corretto.aws/corretto.key | apt-key add -
+RUN ARCH=$(dpkg --print-architecture) ;\
+    echo "deb [arch=$ARCH signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu bionic stable" > /etc/apt/sources.list.d/docker.list &&\
+    add-apt-repository 'deb https://apt.corretto.aws stable main'
+# install software
+RUN apt-get update && \
+ apt-get -y install \
+   sudo socat git curl wget jq \
+   lsb-release ca-certificates \
+   java-11-amazon-corretto-jdk \
+   docker-ce-cli 

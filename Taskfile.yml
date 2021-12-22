@@ -17,47 +17,83 @@
 #
 version: '3'
 vars:
-  OPENWHISK_IMAGE: ghcr.io/nuvolaris/openwhisk-standalone:neo-latest
-env:
+  MILESTONE: neo
+  IMAGE: openwhisk-controller
   REPO: ghcr.io
-  IMAGE: nuvolaris/openwhisk-standalone
-  TAG: neo-latest
+  TAG:
+    sh: git describe --tags --abbrev=0 2>/dev/null || echo {{.MILESTONE}}-latest
+  HOSTNAME:
+    sh: hostname -f
+  RUNTIMES:
+    sh: cat conf/runtimes.json
+  AUTH: 23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP
+  APIHOST: http://{{.HOSTNAME}}:8080
 
 tasks:
 
+  setup: wsk property set --apihost '{{.APIHOST}}' --auth '{{.AUTH}}'
+
   buildx-and-push:
     deps:
-      - openwhisk
+     - openwhisk
     cmds:
-     - docker buildx build --platform linux/amd64,linux/arm64 -t $REPO/$IMAGE:$TAG . --push
+     - docker buildx build --platform linux/amd64,linux/arm64 -t {{.REPO}}/{{.IMAGE}}:{{.TAG}} . --push
 
   build:
     deps: 
-      - openwhisk
+      - compile
     cmds:
-      - docker build . -t $IMAGE:$TAG
+      - docker build . -t {{.REPO}}/{{.IMAGE}}:{{.TAG}}
 
-  openwhisk:
+  show-tag: echo {{.TAG}}
+
+  controller:
     dir: openwhisk
     cmds:
-      - ./gradlew -DskipTests :core:standalone:build
+      - ./gradlew distTar
+      - tar xvf core/controller/build/distributions/controller.tar -C ..
     status:
-      - test -f bin/openwhisk-standalone.jar
+      - test -d ../controller
+  
+  admin:
+    dir: openwhisk
+    deps: 
+      - controller
+    cmds:
+      - ./gradlew :tools:admin:build
+      - cp bin/wskadmin-next ../controller/bin/
+    status:
+      - test -f ../controller/bin/wskadmin-next
 
+  compile:
+    deps:
+      - admin
+      - controller
+
+  clean: |
+    rm -rvf controller
+    cd openwhisk
+    ./gradlew clean 
+  
   run:
     deps:
-      - openwhisk
+      - compile
     cmds:
-      - java -jar bin/openwhisk-standalone.jar
-
-  clean:
-    cmds:
-      - cd openwhisk && ./gradlew clean
-
-  setup:
-    cmds:
-      - echo "Nothing to do (yet)."
-
+      - bash -x controller/bin/controller 0
+    env:
+      CONTROLLER_OPTS: >
+        -Dconfig.file=conf/standalone.conf
+        -Dwhisk-config.whisk.api.host.name={{.HOSTNAME}}
+        -Dwhisk-config.runtimes.manifest='{{.RUNTIMES}}'
+        -Dwhisk-config.port=8080
+        -Dwhisk-config.whisk.api.host.port=8080
+        -Dwhisk-config.whisk.api.host.proto=http
+        -Dwhisk-config.controller.instances=1
+        -Dwhisk-config.limits.actions.invokes.concurrent=30
+        -Dwhisk-config.limits.actions.invokes.perMinute=60
+        -Dwhisk-config.limits.triggers.fires.perMinute=60
+        -Dwhisk-config.limits.actions.sequence.maxLength=50
+  
   start: 
     cmds: 
       - >

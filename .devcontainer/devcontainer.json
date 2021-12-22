@@ -16,7 +16,7 @@
 // under the License.
 {
 	"name": "nuvolaris-controller",
-	"image": "ghcr.io/nuvolaris/nuvolaris-devkit:neo-2021.1219.1230",
+	"image": "ghcr.io/nuvolaris/nuvolaris-devkit:neo-2021.1219.1900",
 	//"build": { "dockerfile": "Dockerfile" },
 	"mounts": [
 		"source=/var/run/docker.sock,target=/var/run/docker-host.sock,type=bind"
@@ -30,6 +30,7 @@
 	"extensions": [
 		"stuart.unique-window-colors",
 		"eamodio.gitlens",
-		"scalameta.metals"
+		"scalameta.metals",
+		"vscjava.vscode-java-pack"
 	]
 }
