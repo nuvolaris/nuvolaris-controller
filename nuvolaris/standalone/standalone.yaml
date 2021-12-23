@@ -16,15 +16,15 @@ spec:
   selector:
     matchLabels:
       app: controller
-  strategy:
-    type: Recreate
+  #strategy:
+  #  type: Recreate
   template:
     metadata:
       labels:
         app: controller
     spec:
       containers:
-      - image: ghcr.io/nuvolaris/openwhisk-standalone:neo-latest
+      - image: ghcr.io/nuvolaris/openwhisk-standalone:neo-2021.1223.1745
         name: controller
         command: ["/bin/bash", "/bin/start.sh"]
         #env:
