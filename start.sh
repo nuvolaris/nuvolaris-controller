@@ -16,8 +16,6 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-java $EXTRA_JVM_ARGS\
- -Dwhisk.standalone.host.name="$(hostname)"\
- -Dwhisk.standalone.host.internal="$(hostname -i)"\
- -Dwhisk.standalone.host.external="$HOST_EXTERNAL" \
+java $EXTRA_JVM_ARGS \
+ -Dwhisk.standalone.host.name="0.0.0.0"\
  -jar /usr/lib/openwhisk-standalone.jar --no-browser "$@"

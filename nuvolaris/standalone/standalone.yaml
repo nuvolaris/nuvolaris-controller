@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: controller
+spec:
+  ports:
+  - port: 3233
+  selector:
+    app: controller
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller
+spec:
+  selector:
+    matchLabels:
+      app: controller
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: controller
+    spec:
+      containers:
+      - image: ghcr.io/nuvolaris/openwhisk-standalone:neo-latest
+        name: controller
+        command: ["/bin/bash", "/bin/start.sh"]
+        #env:
+        #  # Use secret in real usage
+        #- name: MYSQL_ROOT_PASSWORD
+        #  value: password
+        ports:
+        - containerPort: 3233
+          name: controller
+        volumeMounts:
+          - name: dockersock
+            mountPath: "/var/run/docker.sock"
+      volumes:
+         - name: dockersock
+           hostPath:
+             path: /var/run/docker.sock
+  

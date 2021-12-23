@@ -18,33 +18,33 @@
 version: '3'
 vars:
   MILESTONE: neo
-  IMAGE: openwhisk-controller
   REPO: ghcr.io
+  IMAGE: nuvolaris/openwhisk-standalone
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null || echo {{.MILESTONE}}-latest
   HOSTNAME:
     sh: hostname -f
   RUNTIMES:
     sh: cat conf/runtimes.json
-  AUTH: 23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP
+  STANDALONE: "{{.REPO}}/{{.IMAGE}}:{{.TAG}}"
   APIHOST: http://{{.HOSTNAME}}:8080
+  WHISK_SYSTEM: "789c46b1-71f6-4ed5-8c54-816aa4f8c502:abczO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
+  GUEST: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
 
 tasks:
-
-  setup: wsk property set --apihost '{{.APIHOST}}' --auth '{{.AUTH}}'
 
   buildx-and-push:
     deps:
      - openwhisk
     cmds:
-     - docker buildx build --platform linux/amd64,linux/arm64 -t {{.REPO}}/{{.IMAGE}}:{{.TAG}} . --push
+     - docker buildx build --platform linux/amd64,linux/arm64 -t {{.STANDALONE}} . --push
 
   build:
     deps: 
       - compile
     cmds:
-      - docker build . -t {{.REPO}}/{{.IMAGE}}:{{.TAG}}
-
+      - docker build . -t {{.STANDALONE}} 
+      
   show-tag: echo {{.TAG}}
 
   controller:
@@ -57,7 +57,7 @@ tasks:
   
   admin:
     dir: openwhisk
-    deps: 
+    deps:
       - controller
     cmds:
       - ./gradlew :tools:admin:build
@@ -75,7 +75,15 @@ tasks:
     cd openwhisk
     ./gradlew clean 
   
-  run:
+  # val conf = new org.apache.openwhisk.core.cli.Conf(Seq("user", "create", "--auth", key, subject))
+
+  setup:
+    cmds:
+      - wsk property set --apihost http://localhost:3233 --auth '{{.GUEST}}'
+      #- controller/bin/wskadmin-next -v -c conf/standalone.conf user create --auth {{.GUEST}} guest
+      #- controller/bin/wskadmin-next -v -c conf/standalone.conf user create --auth {{.WHISK_SYSTEM}} whisk-system
+
+  run-full:
     deps:
       - compile
     cmds:
@@ -94,20 +102,15 @@ tasks:
         -Dwhisk-config.limits.triggers.fires.perMinute=60
         -Dwhisk-config.limits.actions.sequence.maxLength=50
   
-  start: 
-    cmds: 
+
+  run-local:
+    cmds:
       - >
        docker run -ti
        -p 3232:3232 -p 3233:3233
        -v /var/run/docker.sock:/var/run/docker.sock
-       {{.OPENWHISK_IMAGE}}
+       {{.STANDALONE}} {{.CLI_ARGS}}
     interactive: true
 
-  start2: >
-    echo java
-    -Dwhisk.standalone.host.internal="$(hostname -i)" \
-    -Dwhisk.standalone.host.external="$IP" \
-    -jar /usr/lib/openwhisk-standalone.jar
 
-#HOST="$(hostname -i)"
-#java -Dwhisk.standalone.host.internal=$HOST -jar /usr/lib/openwhisk-standalone.jar
+  deploy-local: kubectl apply -f nuvolaris/standalone
