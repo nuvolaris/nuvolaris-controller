@@ -22,4 +22,4 @@ kubeconfig
 .metals/
 docker/
 controller/
-
+openwhisk-standalone.jar

@@ -65,25 +65,31 @@ tasks:
     status:
       - test -f ../controller/bin/wskadmin-next
 
+  standalone:
+    dir: openwhisk
+    cmds:
+      - ./gradlew :core:standalone:build
+      - cp bin/openwhisk-standalone.jar ..
+    status:
+      - test -f ../openwhisk-standalone.jar
+
   compile:
     deps:
-      - admin
-      - controller
+      - standalone
+      #- admin
+      #- controller
 
   clean: |
     rm -rvf controller
+    rm openwhisk-standalone.jar
     cd openwhisk
     ./gradlew clean 
   
-  # val conf = new org.apache.openwhisk.core.cli.Conf(Seq("user", "create", "--auth", key, subject))
-
   setup:
     cmds:
       - wsk property set --apihost http://localhost:3233 --auth '{{.GUEST}}'
-      #- controller/bin/wskadmin-next -v -c conf/standalone.conf user create --auth {{.GUEST}} guest
-      #- controller/bin/wskadmin-next -v -c conf/standalone.conf user create --auth {{.WHISK_SYSTEM}} whisk-system
-
-  run-full:
+  
+  run-controller:
     deps:
       - compile
     cmds:
@@ -102,8 +108,7 @@ tasks:
         -Dwhisk-config.limits.triggers.fires.perMinute=60
         -Dwhisk-config.limits.actions.sequence.maxLength=50
   
-
-  run-local:
+  run-standalone:
     cmds:
       - >
        docker run -ti
@@ -112,5 +117,4 @@ tasks:
        {{.STANDALONE}} {{.CLI_ARGS}}
     interactive: true
 
-
-  deploy-local: kubectl apply -f nuvolaris/standalone
+  deploy-standalone: kubectl apply -f nuvolaris/standalone

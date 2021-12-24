@@ -35,7 +35,7 @@ RUN apt-get update && \
    lsb-release ca-certificates \
    java-11-amazon-corretto-jdk \
    docker-ce-cli
-ADD openwhisk/bin/openwhisk-standalone.jar /usr/lib/openwhisk-standalone.jar
+ADD openwhisk-standalone.jar /usr/lib/openwhisk-standalone.jar
 ADD start.sh /bin/start.sh
 CMD ["/bin/bash", "/bin/start.sh"]
 

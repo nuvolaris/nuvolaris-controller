@@ -41,7 +41,7 @@ spec:
         app: controller
     spec:
       containers:
-      - image: ghcr.io/nuvolaris/openwhisk-standalone:neo-2021.1223.1745
+      - image: ghcr.io/nuvolaris/openwhisk-standalone:neo-21.1224.11
         name: controller
         command: ["/bin/bash", "/bin/start.sh"]
         #env:
