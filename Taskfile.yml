@@ -91,7 +91,8 @@ tasks:
   
   run-controller:
     deps:
-      - compile
+      - admin
+      - controller
     cmds:
       - bash -x controller/bin/controller 0
     env:
@@ -107,14 +108,26 @@ tasks:
         -Dwhisk-config.limits.actions.invokes.perMinute=60
         -Dwhisk-config.limits.triggers.fires.perMinute=60
         -Dwhisk-config.limits.actions.sequence.maxLength=50
-  
+
   run-standalone:
+    deps: 
+      - standalone
+    cmds:
+      - java -jar openwhisk-standalone.jar --dev-kcf
+
+  run-in-docker:
+    deps:
+     - standalone
     cmds:
       - >
        docker run -ti
        -p 3232:3232 -p 3233:3233
        -v /var/run/docker.sock:/var/run/docker.sock
-       {{.STANDALONE}} {{.CLI_ARGS}}
+       {{.STANDALONE}} --dev-kcf {{.CLI_ARGS}}
     interactive: true
 
-  deploy-standalone: kubectl apply -f nuvolaris/standalone
+  pods: kubectl get pods
+  deploy: kubectl apply -f nuvolaris/standalone
+  undeploy: kubectl delete -f nuvolaris/standalone
+  redeploy:
+    deps: ["undeploy", "deploy"]
