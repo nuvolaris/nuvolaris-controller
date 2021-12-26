@@ -21,20 +21,22 @@ vars:
     sh: git describe --tags --abbrev=0 2>/dev/null || echo {{.MILESTONE}}-latest
   HOSTNAME:
     sh: hostname -f
-  RUNTIMES:
-    sh: cat conf/runtimes.json
-  APIHOST: http://{{.HOSTNAME}}:8080
+  APIHOST: http://{{.HOSTNAME}}:3233
   WHISK_SYSTEM: "789c46b1-71f6-4ed5-8c54-816aa4f8c502:abczO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
   GUEST: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
 
 tasks:
 
-  show-tag: echo {{.TAG}}
-  
+  buildx-and-push:
+    dir: standalone
+    cmds:
+     - task buildx-and-push
+
   setup:
     cmds:
-      - wsk property set --apihost http://localhost:3233 --auth '{{.GUEST}}'
+     - wsk property set --apihost http://localhost:3233 --auth '{{.GUEST}}'
   
+  show-tag: echo {{.TAG}}
 
   pods: kubectl get pods
   deploy: kubectl apply -f nuvolaris/standalone
