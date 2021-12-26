@@ -59,6 +59,8 @@ tasks:
      - wsk property set --apihost http://localhost:3233 --auth '{{.GUEST}}'
   
   show-tag: echo {{.TAG}}
+  move-tag: git tag -f {{.TAG}}
+
 
   pods: kubectl get pods
 
