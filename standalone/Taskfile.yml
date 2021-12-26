@@ -17,27 +17,63 @@
 #
 version: '3'
 vars:
+  MILESTONE: neo
+  REPO: ghcr.io
+  IMAGE: nuvolaris/openwhisk-standalone
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null || echo {{.MILESTONE}}-latest
   HOSTNAME:
     sh: hostname -f
   RUNTIMES:
     sh: cat conf/runtimes.json
+  STANDALONE: "{{.REPO}}/{{.IMAGE}}:{{.TAG}}"
   APIHOST: http://{{.HOSTNAME}}:8080
   WHISK_SYSTEM: "789c46b1-71f6-4ed5-8c54-816aa4f8c502:abczO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
   GUEST: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
 
 tasks:
 
-  show-tag: echo {{.TAG}}
-  
-  setup:
+  buildx-and-push:
+    deps:
+     - compile
     cmds:
-      - wsk property set --apihost http://localhost:3233 --auth '{{.GUEST}}'
-  
+     - docker buildx build --platform linux/amd64,linux/arm64 -t {{.STANDALONE}} . --push
 
-  pods: kubectl get pods
-  deploy: kubectl apply -f nuvolaris/standalone
-  undeploy: kubectl delete -f nuvolaris/standalone
-  redeploy:
-    deps: ["undeploy", "deploy"]
+  build:
+    deps: 
+      - compile
+    cmds:
+      - docker build . -t {{.STANDALONE}} 
+
+  compile:
+    dir: ../openwhisk
+    cmds:
+      - ./gradlew :core:standalone:build
+      - cp bin/openwhisk-standalone.jar ../standalone/lib
+    status:
+      - test -f lib/openwhisk-standalone.jar
+
+  clean: 
+    rm lib/*.jar
+    cd ../openwhisk && ./gradlew clean 
+  
+  run:
+    deps: 
+      - compile
+    cmds:
+      - > 
+      java 
+        -Dconfig.file=conf/standalone-kcf.conf 
+        -jar openwhisk-standalone.jar
+
+  start:
+    deps:
+     - build
+    cmds:
+      - >
+       docker run -ti
+       -p 3232:3232 -p 3233:3233
+       -v /var/run/docker.sock:/var/run/docker.sock
+       {{.STANDALONE}} {{.CLI_ARGS}}
+    interactive: true
+

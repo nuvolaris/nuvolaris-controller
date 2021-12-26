@@ -16,6 +16,8 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-java $EXTRA_JVM_ARGS \
+cd "$(dirname $0)"
+java $JAVA_OPTS $STANDALONE_OPTS \
  -Dwhisk.standalone.host.name="0.0.0.0"\
- -jar /usr/lib/openwhisk-standalone.jar --no-browser "$@"
+ -Dconfig.file=../../conf/standalone=kcf.conf
+ -jar ../lib/openwhisk-standalone.jar --no-browser "$@"

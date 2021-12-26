@@ -40,5 +40,5 @@ jobs:
           version: latest   
       - name: Build and push
         run: |
-          bash cisetup.sh
+          bash .github/cisetup.sh
           task buildx-and-push
