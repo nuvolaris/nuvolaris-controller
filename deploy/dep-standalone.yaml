@@ -30,10 +30,10 @@ spec:
         app: standalone
     spec:
       containers:
-      - image: ghcr.io/nuvolaris/openwhisk-standalone:latest
-        name: standalone
+      - name: openwhisk-standalone
+        image: ghcr.io/nuvolaris/openwhisk-standalone:latest
         ports:
         - containerPort: 3233
           name: apihost
-          - containerPort: 3232
+        - containerPort: 3232
           name: playground
