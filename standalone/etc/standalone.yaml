@@ -18,7 +18,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: controller
+  name: standalone
 spec:
   ports:
   - port: 3233
@@ -28,32 +28,24 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller
+  name: standalone
 spec:
   selector:
     matchLabels:
-      app: controller
+      app: standalone
   #strategy:
   #  type: Recreate
   template:
     metadata:
       labels:
-        app: controller
+        app: standalone
     spec:
       containers:
-      - image: ghcr.io/nuvolaris/openwhisk-standalone:neo-21.1224.11
-        name: controller
-        #command: ["/bin/bash", "/bin/start.sh"]
-        command: ["/bin/bash", "-c", "sleep inf"]
+      - image: ghcr.io/nuvolaris/openwhisk-standalone:neo-latest
+        name: standalone
         ports:
         - containerPort: 3233
-          name: controller
-        volumeMounts:
-          - name: dockersock
-            mountPath: "/var/run/docker.sock"
-      volumes:
-        - name: dockersock
-          hostPath:
-            path: /var/run/docker.sock
-            type: File
+          name: api
+        - containerPort: 3232
+          name: playground
   

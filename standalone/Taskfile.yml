@@ -25,7 +25,7 @@ vars:
   HOSTNAME:
     sh: hostname -f
   RUNTIMES:
-    sh: cat conf/runtimes.json
+    sh: cat ../conf/runtimes.json
   STANDALONE: "{{.REPO}}/{{.IMAGE}}:{{.TAG}}"
   APIHOST: http://{{.HOSTNAME}}:8080
   WHISK_SYSTEM: "789c46b1-71f6-4ed5-8c54-816aa4f8c502:abczO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
@@ -51,20 +51,22 @@ tasks:
       - ./gradlew :core:standalone:build
       - cp bin/openwhisk-standalone.jar ../standalone/lib
     status:
-      - test -f lib/openwhisk-standalone.jar
+      - test -f bin/openwhisk-standalone.jar
 
   clean: 
-    rm lib/*.jar
-    cd ../openwhisk && ./gradlew clean 
+    cmds:
+     - | 
+      rm lib/*.jar
+      cd ../openwhisk
+      rm bin/* 
+      ./gradlew clean 
+    ignore_error: true
   
   run:
     deps: 
       - compile
     cmds:
-      - > 
-      java 
-        -Dconfig.file=conf/standalone-kcf.conf 
-        -jar openwhisk-standalone.jar
+      - bin/standalone
 
   start:
     deps:

@@ -16,8 +16,9 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-cd "$(dirname $0)"
+cd "$(dirname $0)"/..
 java $JAVA_OPTS $STANDALONE_OPTS \
- -Dwhisk.standalone.host.name="0.0.0.0"\
- -Dconfig.file=../../conf/standalone=kcf.conf
- -jar ../lib/openwhisk-standalone.jar --no-browser "$@"
+ -Dwhisk.standalone.host.name="0.0.0.0" \
+ -jar lib/openwhisk-standalone.jar \
+   -c etc/standalone-kcf.conf \
+   --no-browser "$@"
