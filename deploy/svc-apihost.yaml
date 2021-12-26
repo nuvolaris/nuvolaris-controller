@@ -15,13 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-.*-version
-kubeconfig
-nodesource_setup.sh
-wsk
-.metals/
-docker/
-controller/lib/
-controller/bin/
-standalone/lib/
-kustomization.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: nuvolaris
+  name: apihost
+spec:
+  ports:
+  - port: 3233
+  selector:
+    app: standalone

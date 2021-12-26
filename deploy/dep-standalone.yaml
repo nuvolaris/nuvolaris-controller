@@ -15,22 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: nuvolaris
----
-apiVersion: v1
-kind: Service
-metadata:
-  namespace: nuvolaris
-  name: standalone
-spec:
-  ports:
-  - port: 3233
-  selector:
-    app: standalone
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -46,10 +30,10 @@ spec:
         app: standalone
     spec:
       containers:
-      - image: ghcr.io/nuvolaris/openwhisk-standalone:to-be-replaced
+      - image: ghcr.io/nuvolaris/openwhisk-standalone:latest
         name: standalone
         ports:
         - containerPort: 3233
-          name: api
+          name: apihost
           - containerPort: 3232
           name: playground

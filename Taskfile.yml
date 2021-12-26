@@ -27,6 +27,28 @@ vars:
 
 tasks:
 
+  kustomization:
+    cmds:
+      - |
+       cat <<__EOF__ >kustomization.yaml
+       apiVersion: kustomize.config.k8s.io/v1beta1
+       kind: Kustomization
+       images:
+       - name: openwhisk-standalone
+         newTag: {{.TAG}}
+       resources:
+       - deploy/ns.yaml
+       - deploy/dep-standalone.yaml
+       - deploy/svc-apihost.yaml
+       - deploy/svc-playground.yaml
+       __EOF__
+    status:
+     - test kustomization.yaml -nt Taskfile.yml
+
+  undeploy: kubectl delete -f nuvolaris/standalone
+  redeploy:
+    deps: ["undeploy", "deploy"]
+
   buildx-and-push:
     dir: standalone
     cmds:
@@ -39,7 +61,5 @@ tasks:
   show-tag: echo {{.TAG}}
 
   pods: kubectl get pods
-  deploy: kubectl apply -f nuvolaris/standalone
-  undeploy: kubectl delete -f nuvolaris/standalone
-  redeploy:
-    deps: ["undeploy", "deploy"]
+
+  
