@@ -19,6 +19,7 @@
 cd "$(dirname $0)"/..
 java $JAVA_OPTS $STANDALONE_OPTS \
  -Dwhisk.standalone.host.name="0.0.0.0" \
+ -Dwhisk.standalone.host.internal="$(hostname -f)" \
  -jar lib/openwhisk-standalone.jar \
-   -c etc/standalone-kcf.conf \
+   --dev-kcf -c etc/standalone-kcf.conf \
    --no-browser "$@"

@@ -32,6 +32,7 @@ spec:
       containers:
       - name: openwhisk-standalone
         image: ghcr.io/nuvolaris/openwhisk-standalone:latest
+        command: ["sleep", "inf"]
         ports:
         - containerPort: 3233
           name: apihost

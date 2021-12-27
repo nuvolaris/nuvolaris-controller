@@ -1,3 +1,4 @@
+#!/bin/bash
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,37 +16,5 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-apiVersion: v1
-kind: Service
-metadata:
-  name: standalone
-spec:
-  ports:
-  - port: 3233
-  selector:
-    app: controller
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: standalone
-spec:
-  selector:
-    matchLabels:
-      app: standalone
-  #strategy:
-  #  type: Recreate
-  template:
-    metadata:
-      labels:
-        app: standalone
-    spec:
-      containers:
-      - image: ghcr.io/nuvolaris/openwhisk-standalone:neo-latest
-        name: standalone
-        ports:
-        - containerPort: 3233
-          name: api
-        - containerPort: 3232
-          name: playground
-  
+export STANDALONE_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=*:7896"
+"$(dirname $0)"/standalone

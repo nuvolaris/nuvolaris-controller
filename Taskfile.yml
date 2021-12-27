@@ -17,6 +17,7 @@
 #
 version: '3'
 vars:
+  IMAGE: ghcr.io/nuvolaris/openwhisk-standalone
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null || echo {{.MILESTONE}}-latest
   HOSTNAME:
@@ -39,8 +40,10 @@ tasks:
        apiVersion: kustomize.config.k8s.io/v1beta1
        kind: Kustomization
        images:
-       - name: openwhisk-standalone
-         newTag: {{.TAG}}
+       - name: {{.IMAGE}}
+         # newTag: {{.TAG}}
+         newName: ghcr.io/nuvolaris/openwhisk-standalone-test
+         newTag: latest
        resources:
        - ns.yaml
        - dep-standalone.yaml
@@ -55,7 +58,16 @@ tasks:
    cmds:
      - kubectl kustomize deploy
 
-  undeploy: kubectl delete -f nuvolaris/standalone
+  deploy:
+   deps: ["kustomization"]
+   cmds:
+    - kubectl apply -k deploy
+
+  undeploy:
+   deps: ["kustomization"]
+   cmds:
+    - kubectl delete -k deploy
+  
   redeploy:
     deps: ["undeploy", "deploy"]
 
@@ -64,7 +76,7 @@ tasks:
      - wsk property set --apihost http://localhost:3233 --auth '{{.GUEST}}'
   
   show-tag: echo {{.TAG}}
-  move-tag: git tag -f {{.TAG}}
+  update-tag: git tag -f {{.TAG}}
 
   pods: kubectl get pods
 

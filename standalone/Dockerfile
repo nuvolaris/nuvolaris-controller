@@ -31,10 +31,11 @@ RUN apt-get update && apt-get -y upgrade &&\
 RUN wget -O- https://apt.corretto.aws/corretto.key | apt-key add -
 RUN add-apt-repository 'deb https://apt.corretto.aws stable main'
 RUN apt-get update && apt-get -y install java-11-amazon-corretto-jdk
-#RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu bionic stable" > /etc/apt/sources.list.d/docker.list
-#RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor > /usr/share/keyrings/docker-archive-keyring.gpg
-#RUN apt-get update && apt-get -y install docker-ce-cli
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu bionic stable" > /etc/apt/sources.list.d/docker.list
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor > /usr/share/keyrings/docker-archive-keyring.gpg
+RUN apt-get update && apt-get -y install docker-ce-cli
 WORKDIR /home
-ADD lib lib
-ADD bin bin
+ADD lib/ /home/lib/
+ADD bin/ /home/bin/
+ADD etc/ /home/etc/
 ENTRYPOINT ["/bin/bash", "/home/bin/standalone"]

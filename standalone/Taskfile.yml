@@ -19,6 +19,7 @@ version: '3'
 vars:
   MILESTONE: neo
   IMAGE: ghcr.io/nuvolaris/openwhisk-standalone
+  IMAGE2: ghcr.io/nuvolaris/openwhisk-standalone-test
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null || echo {{.MILESTONE}}-latest
   HOSTNAME:
@@ -39,7 +40,7 @@ tasks:
     deps: 
       - compile
     cmds:
-      - docker build . -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest
+      - docker build . -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest -t {{.IMAGE2}}:latest
 
   compile:
     dir: ../openwhisk
@@ -64,14 +65,14 @@ tasks:
     cmds:
       - bin/standalone
 
-  start:
+  debug:
     deps:
      - build
     cmds:
       - >
        docker run -ti
-       -p 3232:3232 -p 3233:3233
-       -v /var/run/docker.sock:/var/run/docker.sock
-       {{.STANDALONE}} {{.CLI_ARGS}}
+       -p 3232:3232 -p 3233:3233 -p 7896:7896
+       --entrypoint=/bin/bash
+       {{.IMAGE}}:{{.TAG}}
     interactive: true
 
