@@ -76,3 +76,43 @@ tasks:
        {{.IMAGE}}:{{.TAG}}
     interactive: true
 
+  kustomization:
+    cmds:
+      - |
+       cat <<__EOF__ >deploy/kustomization.yaml
+       apiVersion: kustomize.config.k8s.io/v1beta1
+       kind: Kustomization
+       images:
+       - name: {{.IMAGE}}
+         newTag: {{.TAG}}
+       resources:
+       - nuvolaris-ns.yaml
+       - standalone-roles.yaml
+       - standalone-deploy.yaml
+       - standalone-svc.yaml
+       __EOF__
+    status:
+     - test deploy/kustomization.yaml -nt Taskfile.yml
+
+  kustomize:
+   deps: ["kustomization"]
+   cmds:
+     - kubectl kustomize deploy
+
+  deploy:
+   deps: ["kustomization"]
+   cmds:
+    - kubectl apply -k deploy
+
+  undeploy:
+   deps: ["kustomization"]
+   cmds:
+    - kubectl delete -k deploy
+  
+  redeploy:
+    deps: ["undeploy", "deploy"]
+
+  list:
+    cmds:
+      - kubectl -n nuvolaris get all
+      - kubectl -n nuvolaris get svc

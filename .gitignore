@@ -17,6 +17,7 @@
 #
 .*-version
 kubeconfig
+kustomization.yaml
 nodesource_setup.sh
 wsk
 .metals/
@@ -24,4 +25,3 @@ docker/
 controller/lib/
 controller/bin/
 standalone/lib/
-kustomization.yaml

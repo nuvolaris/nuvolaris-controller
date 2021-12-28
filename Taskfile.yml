@@ -33,43 +33,6 @@ tasks:
     cmds:
      - task buildx-and-push
 
-  kustomization:
-    cmds:
-      - |
-       cat <<__EOF__ >deploy/kustomization.yaml
-       apiVersion: kustomize.config.k8s.io/v1beta1
-       kind: Kustomization
-       images:
-       - name: {{.IMAGE}}
-         newTag: {{.TAG}}
-         newName: ghcr.io/nuvolaris/openwhisk-standalone
-       resources:
-       - ns.yaml
-       - dep-standalone.yaml
-       - svc-apihost.yaml
-       - svc-playground.yaml
-       __EOF__
-    status:
-     - test deploy/kustomization.yaml -nt Taskfile.yml
-
-  kustomize:
-   deps: ["kustomization"]
-   cmds:
-     - kubectl kustomize deploy
-
-  deploy:
-   deps: ["kustomization"]
-   cmds:
-    - kubectl apply -k deploy
-
-  undeploy:
-   deps: ["kustomization"]
-   cmds:
-    - kubectl delete -k deploy
-  
-  redeploy:
-    deps: ["undeploy", "deploy"]
-
   setup:
     cmds:
      - wsk property set --apihost http://localhost:3233 --auth '{{.GUEST}}'
@@ -77,9 +40,3 @@ tasks:
   show-tag: echo {{.TAG}}
   update-tag: git tag -f {{.TAG}}
 
-  list:
-    cmds:
-      - kubectl -n nuvolaris get po
-      - kubectl -n nuvolaris get svc
-
-  
