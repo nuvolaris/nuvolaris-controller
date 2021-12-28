@@ -35,7 +35,7 @@ RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/d
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor > /usr/share/keyrings/docker-archive-keyring.gpg
 RUN apt-get update && apt-get -y install docker-ce-cli
 WORKDIR /home
-ADD lib/ /home/lib/
-ADD bin/ /home/bin/
-ADD etc/ /home/etc/
+ADD lib/* /home/lib/
+ADD bin/* /home/bin/
+ADD etc/* /home/etc/
 ENTRYPOINT ["/bin/bash", "/home/bin/standalone"]

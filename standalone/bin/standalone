@@ -22,4 +22,4 @@ java $JAVA_OPTS $STANDALONE_OPTS \
  -Dwhisk.standalone.host.internal="$(hostname -f)" \
  -jar lib/openwhisk-standalone.jar \
    --dev-kcf -c etc/standalone-kcf.conf \
-   --no-browser "$@"
+   --no-browser --disable-color-logging "$@"

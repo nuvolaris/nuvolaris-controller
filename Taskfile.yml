@@ -41,9 +41,8 @@ tasks:
        kind: Kustomization
        images:
        - name: {{.IMAGE}}
-         # newTag: {{.TAG}}
-         newName: ghcr.io/nuvolaris/openwhisk-standalone-test
-         newTag: latest
+         newTag: {{.TAG}}
+         newName: ghcr.io/nuvolaris/openwhisk-standalone
        resources:
        - ns.yaml
        - dep-standalone.yaml
@@ -78,6 +77,9 @@ tasks:
   show-tag: echo {{.TAG}}
   update-tag: git tag -f {{.TAG}}
 
-  pods: kubectl get pods
+  list:
+    cmds:
+      - kubectl -n nuvolaris get po
+      - kubectl -n nuvolaris get svc
 
   

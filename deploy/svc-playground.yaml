@@ -21,7 +21,8 @@ metadata:
   namespace: nuvolaris
   name: playground
 spec:
-  ports:
-  - port: 3232
   selector:
     app: standalone
+  ports:
+  - port: 3232
+

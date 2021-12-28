@@ -18,8 +18,8 @@
 version: '3'
 vars:
   MILESTONE: neo
-  IMAGE: ghcr.io/nuvolaris/openwhisk-standalone
-  IMAGE2: ghcr.io/nuvolaris/openwhisk-standalone-test
+  USER: nuvolaris
+  IMAGE: ghcr.io/{{.USER}}/openwhisk-standalone
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null || echo {{.MILESTONE}}-latest
   HOSTNAME:
@@ -40,7 +40,7 @@ tasks:
     deps: 
       - compile
     cmds:
-      - docker build . -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest -t {{.IMAGE2}}:latest
+      - docker build . -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest
 
   compile:
     dir: ../openwhisk

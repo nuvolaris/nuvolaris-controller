@@ -21,7 +21,7 @@ metadata:
   namespace: nuvolaris
   name: apihost
 spec:
-  ports:
-  - port: 3233
   selector:
     app: standalone
+  ports:
+  - port: 3233
