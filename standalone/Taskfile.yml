@@ -53,7 +53,8 @@ tasks:
     dir: ../openwhisk
     cmds:
       - ./gradlew :core:standalone:build
-      - cp bin/openwhisk-standalone.jar ../standalone/lib
+      - mkdir -p ../standalone/lib
+      - cp bin/openwhisk-standalone.jar ../standalone/lib/
     status:
       - test -f bin/openwhisk-standalone.jar
 
