@@ -15,34 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-nodes:
-- role: control-plane
-- role: worker
-  extraPortMappings:
-  - containerPort: 30232
-    hostPort: 3232
-    protocol: TCP
-  - containerPort: 30233
-    hostPort: 3233
-    protocol: TCP
-  - containerPort: 30896
-    hostPort: 7896
-    protocol: TCP  
-
-#- role: worker
-#  kubeadmConfigPatches:
-#  - |
-#    kind: JoinConfiguration
-#    nodeRegistration:
-#      kubeletExtraArgs:
-#        node-labels: "nuv-role=action"
-#networking:
-#    apiServerAddress: "127.0.0.1"
-#    apiServerPort: 16443
-#nodes:
-#- role: control-plane
-#  extraPortMappings:
-#  - containerPort: 16443
-#    hostPort: 16443
+kind delete clusters kind
+kind create cluster --config=kind.yaml
+kind get kubeconfig >kubeconfig

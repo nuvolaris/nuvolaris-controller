@@ -39,4 +39,7 @@ spec:
           name: apihost
         - containerPort: 3232
           name: playground
+        - containerPort: 7896
+          name: debugger
         #command: ["sleep", "inf"]
+        #command: ["/home/bin/debug", "y"]

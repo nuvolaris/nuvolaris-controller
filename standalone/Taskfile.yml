@@ -43,11 +43,12 @@ tasks:
      - docker buildx create --use
      - docker buildx build --platform linux/amd64 -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest .
 
-  build:
+  build-and-load:
     deps: 
       - compile
     cmds:
       - docker build . -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest
+      - kind load docker-image {{.IMAGE}}:{{.TAG}}
 
   compile:
     dir: ../openwhisk
@@ -99,8 +100,6 @@ tasks:
        - standalone-deploy.yaml
        - standalone-svc.yaml
        __EOF__
-    status:
-     - test deploy/kustomization.yaml -nt Taskfile.yml
 
   kustomize:
    deps: ["kustomization"]
@@ -108,7 +107,7 @@ tasks:
      - kubectl kustomize deploy
 
   deploy:
-   deps: ["kustomization"]
+   deps: ["kustomization", "build-and-load"]
    cmds:
     - kubectl apply -k deploy
 

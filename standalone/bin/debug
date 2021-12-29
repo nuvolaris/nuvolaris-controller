@@ -16,5 +16,6 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-export STANDALONE_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=*:7896"
+SUSPEND="${1:-n}"
+export STANDALONE_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=$SUSPEND,address=*:7896"
 "$(dirname $0)"/standalone
