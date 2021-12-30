@@ -44,4 +44,4 @@ To import the project, click on `New Scala Project` (but do not create any proje
 
 Check `Run doctor` to verify the projects has been imported correctly. An healthy import looks like this:
 
-![](./misc/healthy-import.png)
+![](./healthy-import.png)
