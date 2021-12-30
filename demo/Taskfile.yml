@@ -25,15 +25,26 @@ vars:
     sh: hostname -f
   APIHOST: http://{{.HOSTNAME}}:8080
   GUEST: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
-  KUBECTL: "kubectl --kubeconfig kubeconfig"
+  KUBECTL: "kubectl --kubeconfig kubeconfig --namespace nuvolaris"
 
 tasks:
 
+  status:
+    cmds:
+      - echo "*** Nodes"
+      - "{{.KUBECTL}} get nodes"
+      - echo "*** Pods"
+      - "{{.KUBECTL}} get po deploy"
+      - echo "*** Services"
+      - "{{.KUBECTL}} get po"
+    silent: true
+    ignore_error: true
+
   create:
-    cmd:
+    cmds:
       - kind create cluster --config=kind.yaml
       - kind get kubeconfig >kubeconfig
-
+  
   destroy: kind delete clusters kind
 
   kustomization:
