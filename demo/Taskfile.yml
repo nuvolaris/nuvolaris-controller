@@ -34,9 +34,9 @@ tasks:
       - echo "*** Nodes"
       - "{{.KUBECTL}} get nodes"
       - echo "*** Pods"
-      - "{{.KUBECTL}} get po deploy"
-      - echo "*** Services"
       - "{{.KUBECTL}} get po"
+      - echo "*** Services"
+      - "{{.KUBECTL}} get svc"
     silent: true
     ignore_error: true
 
