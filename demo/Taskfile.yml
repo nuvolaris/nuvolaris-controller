@@ -20,7 +20,7 @@ vars:
   MILESTONE: neo
   USER: nuvolaris
   IMAGE: ghcr.io/{{.USER}}/openwhisk-standalone
-  TAG: neo-21.1228.12
+  TAG: neo-21.1230.16
   HOSTNAME:
     sh: hostname -f
   APIHOST: http://{{.HOSTNAME}}:8080
