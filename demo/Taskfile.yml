@@ -82,7 +82,10 @@ tasks:
     deps: ["undeploy", "deploy"]
 
   test:
-    - wsk property set --apihost http://localhost:3233 --auth '{{.GUEST}}'
-    - wsk action create hello hello.js
-    - echo "*** Expecting hello"
-    - wsk action invoke hello
+    cmds:
+      - wsk property set --apihost http://localhost:3233 --auth '{{.GUEST}}'
+      - wsk action update hello hello.js
+      - echo "*** Expecting hello"
+      - wsk action invoke hello -r 
+    silent: true
+  
