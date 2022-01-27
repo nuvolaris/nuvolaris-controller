@@ -15,8 +15,16 @@
 // specific language governing permissions and limitations
 // under the License.
 {
+<<<<<<< HEAD
 	"name": "nuvolaris-controller",
 	"image": "ghcr.io/nuvolaris/nuvolaris-devkit:neo-22.0109.20",
+||||||| 166a591
+	"name": "nuvolaris-controller",
+	"image": "ghcr.io/nuvolaris/nuvolaris-devkit:neo-21.1228.12",
+=======
+	"name": "nuvolaris",
+	"image": "ghcr.io/nuvolaris/nuvolaris-devkit:neo-22.0109.20",
+>>>>>>> 07cc9aa87da9842547336895062a47b65e5fda60
 	//"build": { "dockerfile": "Dockerfile" },
 	"mounts": [
 		"source=/var/run/docker.sock,target=/var/run/docker-host.sock,type=bind"
@@ -24,13 +32,14 @@
 	"remoteUser": "nuvolaris",
 	"overrideCommand": false,
 	"runArgs": [
-		"--name=nuvolaris-controller",
 		"--network=host"
 	],
 	"extensions": [
 		"stuart.unique-window-colors",
+		"oderwat.indent-rainbow",
 		"eamodio.gitlens",
-		"scalameta.metals",
-		"vscjava.vscode-java-pack"
-	]
+		"mhutchie.git-graph"
+                "scalameta.metals",
+                "vscjava.vscode-java-pack"
+ 	]
 }
