@@ -43,11 +43,16 @@ tasks:
      - docker buildx create --use
      - docker buildx build --platform linux/amd64 -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest .
 
-  build-and-load:
-    deps: 
+  build:
+    deps:
       - compile
     cmds:
       - docker build . -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest
+
+  build-and-load:
+    deps: 
+      - build
+    cmds:
       - kind load docker-image {{.IMAGE}}:{{.TAG}}
 
   compile:
@@ -81,7 +86,7 @@ tasks:
       - >
        docker run -ti
        -p 3232:3232 -p 3233:3233 -p 7896:7896
-       --entrypoint=/bin/bash
+       --entrypoint=bin/debug
        {{.IMAGE}}:{{.TAG}}
     interactive: true
 

@@ -1,0 +1,16 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch Java Program",
+            "request": "launch",
+            "mainClass": "org.apache.openwhisk.standalone.StandaloneOpenWhisk",
+            "vmArgs": "-Dwhisk.standalone.host.name=0.0.0.0",
+            "args": "--dev-kcf -c etc/standalone-kcf.conf --no-browser"
+        }
+    ]
+}

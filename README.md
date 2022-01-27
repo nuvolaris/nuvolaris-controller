@@ -31,17 +31,18 @@ To develop with this repo, please use [VSCode](https://code.visualstudio.com/). 
 
 You can put it at work with the following procedure
 
+1. clone everyting and open it in VSCode:
 ```
-git clone https://github.com/nuvolaris/nuvolaris-controller --recurse-submodules
-cd nuvolaris-controller
-code nuvolaris-controller.code-workspace
+git clone https://github.com/nuvolaris/nuvolaris --recurse-submodules
+code nuvolaris
 ```
-
-It will open and show a pop-up asking if you want to `Reopen in Container`.
-Click on it. Then open the Metals plugin (click on the icon that looks like an 'm').
-
+It will open and show a pop-up asking if you want to `Reopen in Container`. Click on it. 
+2. When it has finished, open the `workspace.code-workspace` file and then open the workspace (there will be a button to do that, click on it).
+3. Open the Metals plugin (click on the icon that looks like an 'm').
 To import the project, click on `New Scala Project` (but do not create any project actually) then `import build`. This will activate the Metals plugin, it will import all the subprojects and make available all the features of the plugin.
-
-Check `Run doctor` to verify the projects has been imported correctly. An healthy import looks like this:
+4. Check `Run doctor` to verify the projects has been imported correctly. An healthy import looks like this:
 
 ![](./misc/healthy-import.png)
+
+### How to debug
+
