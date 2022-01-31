@@ -61,6 +61,14 @@ tasks:
        - standalone-roles.yaml
        - standalone-deploy.yaml
        - standalone-svc.yaml
+       - ow-whisk-cm.yaml
+       - ow-whisk-secret.yaml
+       - ow-db-cm.yaml
+       - ow-db-secret.yaml
+       - couchdb-init-cm.yaml
+       - couchdb-init-job.yaml
+       - couchdb-pod.yaml
+       - couchdb-svc.yaml
        __EOF__
 
   kustomize:
