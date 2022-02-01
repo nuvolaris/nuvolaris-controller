@@ -36,10 +36,14 @@ You can put it at work with the following procedure
 git clone https://github.com/nuvolaris/nuvolaris --recurse-submodules
 code nuvolaris
 ```
-It will open and show a pop-up asking if you want to `Reopen in Container`. Click on it. 
-2. When it has finished, open the `workspace.code-workspace` file and then open the workspace (there will be a button to do that, click on it).
-3. Open the Metals plugin (click on the icon that looks like an 'm').
+
+2. It will open and show a pop-up asking if you want to `Reopen in Container`. Click on it. 
+
+3. When it has finished, open the `workspace.code-workspace` file and then open the workspace (there will be a button to do that, click on it).
+
+4. Open the Metals plugin (click on the icon that looks like an 'm').
 To import the project, click on `New Scala Project` (but do not create any project actually) then `import build`. This will activate the Metals plugin, it will import all the subprojects and make available all the features of the plugin.
-4. Check `Run doctor` to verify the projects has been imported correctly. An healthy import looks like this:
+
+5. Check `Run doctor` to verify the projects has been imported correctly. An healthy import looks like this:
 ![](./healthy-import.png)
 
