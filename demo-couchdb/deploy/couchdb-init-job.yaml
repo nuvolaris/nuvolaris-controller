@@ -59,6 +59,11 @@ spec:
         - name: whisk-auth
           mountPath: "/etc/whisk-auth"
         env:
+        - name: "DB_PROVIDER"
+          valueFrom:
+            configMapKeyRef:
+              name: nuvolaris-db.config
+              key: db_provider
         - name: "DB_PROTOCOL"
           valueFrom:
             configMapKeyRef:
