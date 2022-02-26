@@ -40,10 +40,9 @@ tasks:
     silent: true
     ignore_error: true
 
-  create:
-    cmds:
-      - kind create cluster --config=kind.yaml
-      - kind get kubeconfig >kubeconfig
+  config:
+    cmds:      
+      - kind get kubeconfig --name nuvolaris >kubeconfig
   
   destroy: kind delete clusters kind
 
@@ -68,6 +67,8 @@ tasks:
         - couchdb-pod.yaml
         - couchdb-svc.yaml
         - standalone-couchdb-cm.yaml
+        - couchdb-init-cm.yaml
+        - couchdb-init-job.yaml
        __EOF__
 
   kustomize:
@@ -95,4 +96,12 @@ tasks:
       - echo "*** Expecting hello"
       - wsk action invoke hello -r 
     silent: true
-  
+
+  test-couchdb:
+    cmds:
+      - wsk property set --apihost http://localhost:3233 --auth '{{.GUEST}}'
+      - wsk package bind /whisk.system/cloudant demodb -p username "whisk_admin" -p password "some_passw0rd" -p host "nuvolaris-couchdb.nuvolaris.svc.cluster.local" -p dbname demodb
+      - wsk action update hello hello.js
+      - echo "*** Expecting hello"
+      - wsk action invoke hello -r 
+    silent: true  
