@@ -28,13 +28,15 @@ data:
       spi {
         ContainerFactoryProvider = "org.apache.openwhisk.core.containerpool.kubernetes.KubernetesContainerFactoryProvider"
         LogStoreProvider = "org.apache.openwhisk.core.containerpool.logging.DockerToActivationLogStoreProvider"
+        ArtifactStoreProvider = "org.apache.openwhisk.core.database.CouchDbStoreProvider"
       }
+
       couchdb {
           protocol = http          # One of "https" or "http"
-          host     = nuvolaris-couchdb.default.svc.cluster.local    # DB Host
+          host     = nuvolaris-couchdb.nuvolaris.svc.cluster.local    # DB Host
           port     = 5984          # DB Port
-          username = "d2hpc2tfYWRtaW4=" # whisk_admin
-          password = "c29tZV9wYXNzdzByZA==" # some_passw0rd
+          username = "whisk_admin"
+          password = "some_passw0rd"
           provider = "CouchDB"     # Either "Cloudant" or "CouchDB"
           databases {              # Database names used for various entity classes
             WhiskAuth       = "test_subjects"

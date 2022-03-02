@@ -16,16 +16,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 apiVersion: v1
 kind: Service
 metadata:
   name: nuvolaris-couchdb
   labels:
 spec:
-  type: NodePort
-  selector:
-    app: nuvolaris-couchdb
-  ports:
-  - port: 5984
-    targetPort: 5984
-    nodePort: 30984
+ selector:
+   name: nuvolaris-couchdb
+ ports:
+   - port: 5984
+     name: couchdb
