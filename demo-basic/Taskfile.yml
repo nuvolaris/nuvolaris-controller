@@ -40,13 +40,6 @@ tasks:
     silent: true
     ignore_error: true
 
-  create:
-    cmds:
-      - kind create cluster --config=kind.yaml
-      - kind get kubeconfig >kubeconfig
-  
-  destroy: kind delete clusters kind
-
   kustomization:
     cmds:
       - |

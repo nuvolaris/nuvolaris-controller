@@ -30,7 +30,7 @@
 		"stuart.unique-window-colors",
 		"oderwat.indent-rainbow",
 		"eamodio.gitlens",
-		"mhutchie.git-graph"
+		"mhutchie.git-graph",
                 "scalameta.metals",
                 "vscjava.vscode-java-pack"
  	]
