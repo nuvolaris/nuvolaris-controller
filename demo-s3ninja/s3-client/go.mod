@@ -1,4 +1,4 @@
-module demo
+module s3-client
 
 go 1.17
 
