@@ -33,6 +33,7 @@ header:
     - '**/openwhisk/**'
     - '**/openwhisk-*/**'
     - '**/parthenon/**'
+    - '**/go.sum'
  
 dependency:
   files:
