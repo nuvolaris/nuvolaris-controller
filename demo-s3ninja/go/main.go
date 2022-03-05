@@ -1,0 +1,105 @@
+package main
+
+import (
+	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"log"
+	"os"
+	"strings"
+)
+
+const (
+	AwsRegion       = "eu-central-1"
+	AwsClientId     = "AKIAIOSFODNN7EXAMPLE"
+	AwsClientSecret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+
+	S3NinjaEndpointEnvVariableName = "S3NINJA_ENDPOINT"
+	demoBucketName                 = "demo"
+
+	CommandCreateBucket      = "create-bucket"
+	CommandUploadFile        = "upload-random-file"
+	CommandListBucketContent = "list-files"
+)
+
+func newS3session() *s3.S3 {
+	awsSession := session.Must(session.NewSession(&aws.Config{
+		Region: aws.String(AwsRegion),
+		Credentials: credentials.NewStaticCredentials(
+			AwsClientId,
+			AwsClientSecret,
+			"",
+		),
+	}))
+	s3endpoint := os.Getenv(S3NinjaEndpointEnvVariableName)
+	if s3endpoint == "" {
+		log.Fatalf("Missing env variable %q", S3NinjaEndpointEnvVariableName)
+	}
+	return s3.New(awsSession, &aws.Config{Endpoint: aws.String(s3endpoint)})
+}
+
+func createBucket(session *s3.S3, name string) {
+	log.Printf("Creating bucket %q...", name)
+	_, err := session.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String(name)})
+	if err != nil {
+		if err, ok := err.(awserr.Error); ok {
+			switch err.Code() {
+			case s3.ErrCodeBucketAlreadyExists:
+				log.Printf("Bucket %q already exist, skipping creation", name)
+			default:
+				log.Fatalf(err.Error())
+			}
+		}
+	} else {
+		log.Printf("Bucket %q created", name)
+	}
+}
+
+func uploadRandomFile(session *s3.S3, bucketName string) {
+	fileName := fmt.Sprintf("%s.txt", randomCharactersSequence(10))
+	log.Printf("Uploading random file %q to bucket %q...", fileName, bucketName)
+	_, err := session.PutObject(&s3.PutObjectInput{
+		Body:   strings.NewReader(randomCharactersSequence(100)),
+		Key:    aws.String(fileName),
+		Bucket: aws.String(bucketName),
+		ACL:    aws.String(s3.BucketCannedACLPublicRead),
+	})
+	if err != nil {
+		log.Fatalf(err.Error())
+	} else {
+		log.Printf("File uploaded successfully")
+	}
+}
+
+func listBucketContent(session *s3.S3, bucketName string) {
+	objs, err := session.ListObjectsV2(&s3.ListObjectsV2Input{
+		Bucket: aws.String(bucketName),
+	})
+	if err != nil {
+		log.Fatalf(err.Error())
+	} else {
+		log.Printf("%+v", objs)
+	}
+}
+
+func main() {
+	args := os.Args[1:]
+	if len(args) == 0 {
+		log.Fatalf("Usage: go ./main.go <command>")
+	}
+
+	s3session := newS3session()
+	switch args[0] {
+	case CommandCreateBucket:
+		createBucket(s3session, demoBucketName)
+	case CommandUploadFile:
+		uploadRandomFile(s3session, demoBucketName)
+	case CommandListBucketContent:
+		listBucketContent(s3session, demoBucketName)
+	default:
+		log.Fatalf("Command %q not found", args[0])
+	}
+}
