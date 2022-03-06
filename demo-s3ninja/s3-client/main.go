@@ -34,8 +34,8 @@ const (
 	AwsClientId     = "AKIAIOSFODNN7EXAMPLE"
 	AwsClientSecret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 
-	S3NinjaEndpointEnvVariableName = "S3NINJA_ENDPOINT"
-	demoBucketName                 = "demo"
+	S3NinjaUrlEnvVariableName    = "S3NINJA_URL"
+	S3NinjaBucketEnvVariableName = "S3NINJA_BUCKET"
 
 	CommandCreateBucket      = "create-bucket"
 	CommandUploadFile        = "upload-random-file"
@@ -51,9 +51,9 @@ func newS3session() *s3.S3 {
 			"",
 		),
 	}))
-	s3endpoint := os.Getenv(S3NinjaEndpointEnvVariableName)
+	s3endpoint := os.Getenv(S3NinjaUrlEnvVariableName)
 	if s3endpoint == "" {
-		log.Fatalf("Missing env variable %q", S3NinjaEndpointEnvVariableName)
+		log.Fatalf("Missing env variable %q", S3NinjaUrlEnvVariableName)
 	}
 	return s3.New(awsSession, &aws.Config{Endpoint: aws.String(s3endpoint)})
 }
@@ -108,14 +108,19 @@ func main() {
 		log.Fatalf("Usage: go ./main.go <command>")
 	}
 
+	bucketName := os.Getenv(S3NinjaBucketEnvVariableName)
+	if bucketName == "" {
+		log.Fatalf("Missing env variable %q", S3NinjaBucketEnvVariableName)
+	}
+
 	s3session := newS3session()
 	switch args[0] {
 	case CommandCreateBucket:
-		createBucket(s3session, demoBucketName)
+		createBucket(s3session, bucketName)
 	case CommandUploadFile:
-		uploadRandomFile(s3session, demoBucketName)
+		uploadRandomFile(s3session, bucketName)
 	case CommandListBucketContent:
-		listBucketContent(s3session, demoBucketName)
+		listBucketContent(s3session, bucketName)
 	default:
 		log.Fatalf("Command %q not found", args[0])
 	}
