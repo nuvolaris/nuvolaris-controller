@@ -50,7 +50,7 @@ task list-files
 task undeploy
 ```
 
-## Knows issues
+## Known issues
 ### 1. Creating buckets with the same name does not return any error
 When creating multiple buckets with the same name, S3 Ninja does not return any error, even though 
 it does not create the buckets either. 
