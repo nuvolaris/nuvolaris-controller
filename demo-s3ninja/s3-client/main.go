@@ -32,7 +32,7 @@ import (
 const (
 	AwsRegion       = "eu-central-1"
 	AwsClientId     = "AKIAIOSFODNN7EXAMPLE"
-	AwsClientSecret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+	AwsClientSecret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" // dummy credentials
 
 	S3NinjaUrlEnvVariableName    = "S3NINJA_URL"
 	S3NinjaBucketEnvVariableName = "S3NINJA_BUCKET"

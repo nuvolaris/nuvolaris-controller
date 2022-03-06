@@ -19,11 +19,11 @@ version: '3'
 
 
 vars:
-  S3NINJA_VERSION: 7.2.4
-  HOSTNAME:
-    sh: hostname -f
-  APIHOST: http://{{.HOSTNAME}}:8080
-  NAMESPACE: s3ninja-demo
+  S3NINJA_VERSION: 7.2.4 
+  HOSTNAME: localhost
+  S3NINJA_URL: "http://{{.HOSTNAME}}:9444"
+  S3NINJA_BUCKET: "demo"
+  NAMESPACE: demo-s3ninja
   KUBECTL: "kubectl --namespace {{.NAMESPACE}}"
 
 
@@ -86,7 +86,11 @@ tasks:
 
   deploy:
    deps: ["kustomization"]
+   vars:
    cmds:
+    # Append "bucket.hostname" record to /etc/hosts if not already present
+    - "grep -qF '127.0.0.1 {{.S3NINJA_BUCKET}}.{{.HOSTNAME}}' /etc/hosts || echo '127.0.0.1 {{.S3NINJA_BUCKET}}.{{.HOSTNAME}}' | sudo tee -a /etc/hosts" 
+    # Apply k8s kustomization
     - "{{.KUBECTL}} apply -k deploy"
 
   undeploy:
@@ -96,3 +100,39 @@ tasks:
   
   redeploy:
     deps: ["undeploy", "deploy"]
+
+
+
+  build-s3-client:
+    run: once
+    cmds:
+    - "go build"
+    dir: "./s3-client"
+
+  create-bucket:
+    deps: ["build-s3-client"]
+    run: once
+    cmds:
+    - "./s3-client create-bucket"
+    env:
+      S3NINJA_URL: "{{.S3NINJA_URL}}"
+      S3NINJA_BUCKET: "{{.S3NINJA_BUCKET}}"
+    dir: ./s3-client
+
+  upload-random-file:
+    deps: ["build-s3-client", "create-bucket"]
+    cmds:
+    - "./s3-client upload-random-file"
+    env:
+      S3NINJA_URL: "{{.S3NINJA_URL}}"
+      S3NINJA_BUCKET: "{{.S3NINJA_BUCKET}}"
+    dir: ./s3-client
+
+  list-files:
+    deps: ["build-s3-client", "create-bucket"]
+    cmds:
+    - "./s3-client list-files"
+    env:
+      S3NINJA_URL: "{{.S3NINJA_URL}}"
+      S3NINJA_BUCKET: "{{.S3NINJA_BUCKET}}"
+    dir: ./s3-client
