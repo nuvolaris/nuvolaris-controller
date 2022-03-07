@@ -1,0 +1,138 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+version: '3'
+
+
+vars:
+  S3NINJA_VERSION: 7.2.4 
+  HOSTNAME: localhost
+  S3NINJA_URL: "http://{{.HOSTNAME}}:9444"
+  S3NINJA_BUCKET: "demo"
+  NAMESPACE: demo-s3ninja
+  KUBECTL: "kubectl --namespace {{.NAMESPACE}}"
+
+
+tasks:
+  status:
+    cmds:
+      - echo "*** Nodes"
+      - "{{.KUBECTL}} get nodes"
+      - echo "*** Pods"
+      - "{{.KUBECTL}} get po"
+      - echo "*** Services"
+      - "{{.KUBECTL}} get svc"
+    silent: true
+    ignore_error: true
+
+  kustomization:
+    cmds:
+      - |
+       cat <<__EOF__ >deploy/namespace.yaml
+       # Licensed to the Apache Software Foundation (ASF) under one
+       # or more contributor license agreements.  See the NOTICE file
+       # distributed with this work for additional information
+       # regarding copyright ownership.  The ASF licenses this file
+       # to you under the Apache License, Version 2.0 (the
+       # "License"); you may not use this file except in compliance
+       # with the License.  You may obtain a copy of the License at
+       #
+       #   http://www.apache.org/licenses/LICENSE-2.0
+       #
+       # Unless required by applicable law or agreed to in writing,
+       # software distributed under the License is distributed on an
+       # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+       # KIND, either express or implied.  See the License for the
+       # specific language governing permissions and limitations
+       # under the License.
+       apiVersion: v1
+       kind: Namespace
+       metadata:
+         name: {{.NAMESPACE}}
+       __EOF__
+
+      - |
+       cat <<__EOF__ >deploy/kustomization.yaml
+       apiVersion: kustomize.config.k8s.io/v1beta1
+       kind: Kustomization
+       namespace: {{.NAMESPACE}}
+       images:
+        - name: scireum/s3-ninja
+          newTag: {{.S3NINJA_VERSION}}
+       resources:
+        - deployment.yaml
+        - svc.yaml
+        - namespace.yaml
+       __EOF__
+
+  kustomize:
+   deps: ["kustomization"]
+   cmds:
+     - "{{.KUBECTL}} kustomize deploy"
+
+  deploy:
+   deps: ["kustomization"]
+   vars:
+   cmds:
+    # Append "bucket.hostname" record to /etc/hosts if not already present
+    - "grep -qF '127.0.0.1 {{.S3NINJA_BUCKET}}.{{.HOSTNAME}}' /etc/hosts || echo '127.0.0.1 {{.S3NINJA_BUCKET}}.{{.HOSTNAME}}' | sudo tee -a /etc/hosts" 
+    # Apply k8s kustomization
+    - "{{.KUBECTL}} apply -k deploy"
+
+  undeploy:
+   deps: ["kustomization"]
+   cmds:
+    - "{{.KUBECTL}} delete -k deploy"
+  
+  redeploy:
+    deps: ["undeploy", "deploy"]
+
+
+
+  build-s3-client:
+    run: once
+    cmds:
+    - "go build"
+    dir: "./s3-client"
+
+  create-bucket:
+    deps: ["build-s3-client"]
+    run: once
+    cmds:
+    - "./s3-client create-bucket"
+    env:
+      S3NINJA_URL: "{{.S3NINJA_URL}}"
+      S3NINJA_BUCKET: "{{.S3NINJA_BUCKET}}"
+    dir: ./s3-client
+
+  upload-random-file:
+    deps: ["build-s3-client", "create-bucket"]
+    cmds:
+    - "./s3-client upload-random-file"
+    env:
+      S3NINJA_URL: "{{.S3NINJA_URL}}"
+      S3NINJA_BUCKET: "{{.S3NINJA_BUCKET}}"
+    dir: ./s3-client
+
+  list-files:
+    deps: ["build-s3-client", "create-bucket"]
+    cmds:
+    - "./s3-client list-files"
+    env:
+      S3NINJA_URL: "{{.S3NINJA_URL}}"
+      S3NINJA_BUCKET: "{{.S3NINJA_BUCKET}}"
+    dir: ./s3-client

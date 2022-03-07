@@ -14,28 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-#
-header:
-  license:
-    spdx-id: Apache-2.0
-    copyright-owner: Apache Software Foundation
-
-  paths-ignore:
-    - 'nuvolaris-controller.code-workspace'
-    - 'nodesource_setup.sh'
-    - '**/LICENSE'
-    - '**/package-lock.json'
-    - '**/.*-version'
-    - '**/*.json'
-    - '**/node_modules/**'
-    - '**/build/**'
-    - '**/target/**'
-    - '**/openwhisk/**'
-    - '**/openwhisk-*/**'
-    - '**/parthenon/**'
-    - '**/go.sum'
- 
-dependency:
-  files:
-    - go.mod
-    - package.json 
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo-s3ninja
