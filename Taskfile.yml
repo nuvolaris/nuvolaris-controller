@@ -17,6 +17,7 @@
 #
 version: '3'
 vars:
+  BASETAG: v0.2.0-trinity
   IMAGE: ghcr.io/nuvolaris/openwhisk-standalone
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null || echo {{.MILESTONE}}-latest
@@ -24,6 +25,8 @@ vars:
     sh: hostname -f
 
 tasks:
+
+  tag: git tag -d $(git tag) ; git tag -f {{.BASETAG}}.$(date +%y%m%d%H)
 
   buildx-and-push:
     dir: standalone
