@@ -24,7 +24,7 @@ spec:
     - port: 9444
       targetPort: http
       protocol: TCP
-      nodePort: 30444 # TODO: remove me
+      nodePort: 30444 
       name: http
   selector:
     app.kubernetes.io/name: s3ninja
