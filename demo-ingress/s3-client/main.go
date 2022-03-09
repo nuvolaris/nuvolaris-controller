@@ -94,7 +94,7 @@ func listBucketContent(session *s3.S3, bucketName string) {
 func getBucketList() ([]string, error) {
 	bucketsEnvVariable := os.Getenv(S3NinjaBucketEnvVariableName)
 	if bucketsEnvVariable == "" {
-		return nil, fmt.Errorf("Missing env variable %q", S3NinjaBucketEnvVariableName)
+		return nil, fmt.Errorf("missing env variable %q", S3NinjaBucketEnvVariableName)
 	}
 	bucketsEnvVariable = strings.Replace(bucketsEnvVariable, "\"", "", -1)
 	bucketsEnvVariable = strings.Replace(bucketsEnvVariable, "(", "", -1)
@@ -107,7 +107,6 @@ func main() {
 	if len(args) == 0 {
 		log.Fatalf("Usage: go ./main.go <command>")
 	}
-
 	bucketList, err := getBucketList()
 	if err != nil {
 		log.Fatal(err.Error())

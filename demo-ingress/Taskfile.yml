@@ -93,10 +93,10 @@ tasks:
    cmds:
     # Deploy ingress-nginx to dedicated namespace
     - "kubectl apply -f {{.INGRESS_NGINX_MANIFEST_URL}}"
-    - "kubectl wait deploy/ingress-nginx-controller --for condition=available --namespace ingress-nginx"
+    - "kubectl wait deploy/ingress-nginx-controller --for condition=available --timeout=60s --namespace ingress-nginx"
     # Apply k8s kustomization
     - "{{.KUBECTL}} apply -k deploy/"
-    - "{{.KUBECTL}} wait deploy/s3ninja --for condition=available"
+    - "{{.KUBECTL}} wait pod --for condition=ready -l app.kubernetes.io/name=s3ninja --timeout=60s"
 
   undeploy:
    deps: ["kustomization"]
@@ -134,6 +134,7 @@ tasks:
       S3NINJA_URL: "{{.S3NINJA_URL}}"
       S3NINJA_BUCKET_LIST: "{{.S3NINJA_BUCKET_LIST}}"
     dir: ./s3-client
+    silent: true
 
 
   build-s3-client:

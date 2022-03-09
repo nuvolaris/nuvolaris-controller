@@ -36,6 +36,7 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9000
+          name: http
         resources:
           requests:
             memory: 128Mi
@@ -43,3 +44,10 @@ spec:
           limits:
             memory: 256Mi
             cpu: 250m
+        readinessProbe:
+          httpGet:
+            path: /ui
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 2
+          failureThreshold: 5

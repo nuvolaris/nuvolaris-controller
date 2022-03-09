@@ -22,7 +22,7 @@ spec:
   type: NodePort
   ports:
     - port: 9444
-      targetPort: 9000
+      targetPort: http
       protocol: TCP
       nodePort: 30444 # TODO: remove me
       name: http
