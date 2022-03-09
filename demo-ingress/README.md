@@ -43,20 +43,15 @@ In order to be able to access the ingress controller from your browser, forward 
 kubectl port-forward --namespace=ingress-nginx service/ingress-nginx-controller 8080:80
 ```
 
-### 4. Update /etc/hosts on your machine
-Add to /etc/hosts on your machine (your actual machine, **not** the VSCode dev container) a record for each of the created buckets:
-```
-127.0.0.1 <bucket>.localhost
-```
-
 Replace <bucket> with the actual bucket name.
-You can get the list of buckets by looking at the value of the variable S3NINJA_BUCKET_LIST in the [Taskfile.yaml](Taskfile.yml) or by running the following task:
-```shell
-task list-files
-```
 
-### 5. Access the HTML files from your browser
+### 3. Access the HTML files from your browser
 You can access the HTML files stored in the S3 buckets from your browser by navigating to the following URL:
 ```
 http://<bucket>.localhost:8080/<filename>
+```
+
+You can get the list of buckets with the respective files by running the following task:
+```shell
+task list-files
 ```
