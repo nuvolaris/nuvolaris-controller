@@ -30,11 +30,12 @@ task init
 ```
 
 The command above runs a task that does the following: 
-* deploy ingress-ninx as ingress controller
+* deploy ingress-nginx as ingress controller
 * deploy s3ninja as S3 compatible storage
-* configure an ingress that forwards all the requests to s3ninja service
+* configure an ingress that forwards all the requests to the s3ninja svc
 * create a list of buckets on s3ninja and, for each of them, upload a random html file to it.
 
+The initialization should take around 1 minute.
 
 ### 2. Enable port forwarding 
 In order to be able to access the ingress controller from your browser, forward the port 8080 on your machine to the port 80 of the ingress service:
@@ -43,7 +44,7 @@ kubectl port-forward --namespace=ingress-nginx service/ingress-nginx-controller 
 ```
 
 ### 4. Update /etc/hosts on your machine
-Add to /etc/hosts on your machine (your actual machine, **not** the one in the VSCode dev container) a record for each of the created buckets:
+Add to /etc/hosts on your machine (your actual machine, **not** the VSCode dev container) a record for each of the created buckets:
 ```
 127.0.0.1 <bucket>.localhost
 ```

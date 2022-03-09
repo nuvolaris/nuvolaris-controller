@@ -48,6 +48,6 @@ spec:
           httpGet:
             path: /ui
             port: http
-          initialDelaySeconds: 5
+          initialDelaySeconds: 15
           periodSeconds: 2
           failureThreshold: 5
