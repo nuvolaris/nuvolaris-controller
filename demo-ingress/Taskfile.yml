@@ -121,7 +121,7 @@ tasks:
           do
            grep -qF "127.0.0.1 ${bucket}.{{.HOSTNAME}}" /etc/hosts || echo "127.0.0.1 ${bucket}.{{.HOSTNAME}}" | sudo tee -a /etc/hosts
           done
-      # Create buckets and upload random files
+      # Create buckets and upload random files (s3ninja auto creates the buckets if not already existing)
       - "./s3-client upload-random-files"
       # Make buckets public
       - | 
