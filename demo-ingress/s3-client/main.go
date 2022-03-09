@@ -20,7 +20,6 @@ package main
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -35,11 +34,16 @@ const (
 	AwsClientSecret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" // dummy credentials
 
 	S3NinjaUrlEnvVariableName    = "S3NINJA_URL"
-	S3NinjaBucketEnvVariableName = "S3NINJA_BUCKET"
+	S3NinjaBucketEnvVariableName = "S3NINJA_BUCKET_LIST"
 
-	CommandCreateBucket      = "create-bucket"
-	CommandUploadFile        = "upload-random-file"
-	CommandListBucketContent = "list-files"
+	CommandUploadFiles        = "upload-random-files"
+	CommandListBucketsContent = "list-files"
+
+	dummyIndexHtmlTemplate = `
+	<html>
+	<h1> This is the index of %s </h1>
+	</html>
+	`
 )
 
 func newS3session() *s3.S3 {
@@ -58,28 +62,13 @@ func newS3session() *s3.S3 {
 	return s3.New(awsSession, &aws.Config{Endpoint: aws.String(s3endpoint)})
 }
 
-func createBucket(session *s3.S3, name string) {
-	log.Printf("Creating bucket %q...", name)
-	_, err := session.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String(name)})
-	if err != nil {
-		if err, ok := err.(awserr.Error); ok {
-			switch err.Code() {
-			case s3.ErrCodeBucketAlreadyExists:
-				log.Printf("Bucket %q already exist, skipping creation", name)
-			default:
-				log.Fatalf(err.Error())
-			}
-		}
-	} else {
-		log.Printf("Bucket %q created", name)
-	}
-}
-
-func uploadRandomFile(session *s3.S3, bucketName string) {
-	fileName := fmt.Sprintf("%s.txt", randomCharactersSequence(10))
+func uploadRandomHtmlFile(session *s3.S3, bucketName string) {
+	prefix := randomCharactersSequence(10)
+	fileName := fmt.Sprintf("%s/index.html", prefix)
 	log.Printf("Uploading random file %q to bucket %q...", fileName, bucketName)
+
 	_, err := session.PutObject(&s3.PutObjectInput{
-		Body:   strings.NewReader(randomCharactersSequence(100)),
+		Body:   strings.NewReader(fmt.Sprintf(dummyIndexHtmlTemplate, prefix)),
 		Key:    aws.String(fileName),
 		Bucket: aws.String(bucketName),
 		ACL:    aws.String(s3.BucketCannedACLPublicRead),
@@ -98,8 +87,19 @@ func listBucketContent(session *s3.S3, bucketName string) {
 	if err != nil {
 		log.Fatalf(err.Error())
 	} else {
-		log.Printf("%+v", objs)
+		log.Printf("Bucket %q: \n%+v", bucketName, objs)
 	}
+}
+
+func getBucketList() ([]string, error) {
+	bucketsEnvVariable := os.Getenv(S3NinjaBucketEnvVariableName)
+	if bucketsEnvVariable == "" {
+		return nil, fmt.Errorf("Missing env variable %q", S3NinjaBucketEnvVariableName)
+	}
+	bucketsEnvVariable = strings.Replace(bucketsEnvVariable, "\"", "", -1)
+	bucketsEnvVariable = strings.Replace(bucketsEnvVariable, "(", "", -1)
+	bucketsEnvVariable = strings.Replace(bucketsEnvVariable, ")", "", -1)
+	return strings.Split(bucketsEnvVariable, " "), nil
 }
 
 func main() {
@@ -108,19 +108,21 @@ func main() {
 		log.Fatalf("Usage: go ./main.go <command>")
 	}
 
-	bucketName := os.Getenv(S3NinjaBucketEnvVariableName)
-	if bucketName == "" {
-		log.Fatalf("Missing env variable %q", S3NinjaBucketEnvVariableName)
+	bucketList, err := getBucketList()
+	if err != nil {
+		log.Fatal(err.Error())
 	}
 
 	s3session := newS3session()
 	switch args[0] {
-	case CommandCreateBucket:
-		createBucket(s3session, bucketName)
-	case CommandUploadFile:
-		uploadRandomFile(s3session, bucketName)
-	case CommandListBucketContent:
-		listBucketContent(s3session, bucketName)
+	case CommandUploadFiles:
+		for _, bucket := range bucketList {
+			uploadRandomHtmlFile(s3session, bucket)
+		}
+	case CommandListBucketsContent:
+		for _, bucket := range bucketList {
+			listBucketContent(s3session, bucket)
+		}
 	default:
 		log.Fatalf("Command %q not found", args[0])
 	}

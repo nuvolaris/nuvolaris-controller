@@ -24,7 +24,7 @@ vars:
   NAMESPACE: demo-ingress
   KUBECTL: "kubectl --namespace {{.NAMESPACE}}"
   S3NINJA_URL: "http://{{.HOSTNAME}}:9444"
-  S3NINJA_BUCKET: "demo"
+  S3NINJA_BUCKET_LIST: ("demo1" "demo2")
   INGRESS_NGINX_VERSION: "v1.1.1"
   INGRESS_NGINX_MANIFEST_URL: "https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-{{.INGRESS_NGINX_VERSION}}/deploy/static/provider/cloud/deploy.yaml"
 
@@ -91,12 +91,12 @@ tasks:
    deps: ["kustomization"]
    vars:
    cmds:
-    # Append "bucket.hostname" record to /etc/hosts if not already present
-    - "grep -qF '127.0.0.1 {{.S3NINJA_BUCKET}}.{{.HOSTNAME}}' /etc/hosts || echo '127.0.0.1 {{.S3NINJA_BUCKET}}.{{.HOSTNAME}}' | sudo tee -a /etc/hosts" 
     # Deploy ingress-nginx to dedicated namespace
     - "kubectl apply -f {{.INGRESS_NGINX_MANIFEST_URL}}"
+    - "kubectl wait deploy/ingress-nginx-controller --for condition=available --namespace ingress-nginx"
     # Apply k8s kustomization
     - "{{.KUBECTL}} apply -k deploy/"
+    - "{{.KUBECTL}} wait deploy/s3ninja --for condition=available"
 
   undeploy:
    deps: ["kustomization"]
@@ -109,36 +109,44 @@ tasks:
 
 
 
+
+
+  init:
+    deps: ["deploy", "build-s3-client"]
+    cmds:
+      # Append "<bucket>.hostname" records to /etc/hosts if not already present
+      - |
+        list={{.S3NINJA_BUCKET_LIST}} 
+        for bucket in "${list[@]}" ;
+          do
+           grep -qF "127.0.0.1 ${bucket}.{{.HOSTNAME}}" /etc/hosts || echo "127.0.0.1 ${bucket}.{{.HOSTNAME}}" | sudo tee -a /etc/hosts
+          done
+      # Create buckets and upload random files
+      - "./s3-client upload-random-files"
+      # Make buckets public
+      - | 
+        list={{.S3NINJA_BUCKET_LIST}} 
+        for bucket in "${list[@]}" ;
+          do
+            curl "http://127.0.0.1:9444/ui/${bucket}?make-public"
+          done
+    env:
+      S3NINJA_URL: "{{.S3NINJA_URL}}"
+      S3NINJA_BUCKET_LIST: "{{.S3NINJA_BUCKET_LIST}}"
+    dir: ./s3-client
+
+
   build-s3-client:
     run: once
     cmds:
     - "go build"
     dir: "./s3-client"
 
-  create-bucket:
-    deps: ["build-s3-client"]
-    run: once
-    cmds:
-    - "./s3-client create-bucket"
-    env:
-      S3NINJA_URL: "{{.S3NINJA_URL}}"
-      S3NINJA_BUCKET: "{{.S3NINJA_BUCKET}}"
-    dir: ./s3-client
-
-  upload-random-file:
-    deps: ["build-s3-client", "create-bucket"]
-    cmds:
-    - "./s3-client upload-random-file"
-    env:
-      S3NINJA_URL: "{{.S3NINJA_URL}}"
-      S3NINJA_BUCKET: "{{.S3NINJA_BUCKET}}"
-    dir: ./s3-client
-
   list-files:
-    deps: ["build-s3-client", "create-bucket"]
+    deps: ["build-s3-client"]
     cmds:
     - "./s3-client list-files"
     env:
       S3NINJA_URL: "{{.S3NINJA_URL}}"
-      S3NINJA_BUCKET: "{{.S3NINJA_BUCKET}}"
+      S3NINJA_BUCKET_LIST: "{{.S3NINJA_BUCKET_LIST}}"
     dir: ./s3-client
