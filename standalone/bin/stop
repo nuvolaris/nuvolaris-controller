@@ -1,3 +1,5 @@
+#!/bin/bash
+#!/bin/bash
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,34 +17,4 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-name: openwhisk-standalone
-on: 
-  push:
-    tags:
-      - '[0-9]*'
-
-jobs:
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout recursive
-        uses: actions/checkout@v2
-        with:
-          submodules: recursive
-      - name: License check
-        uses: apache/skywalking-eyes@main
-      - name: Registry login
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Buildx install
-        uses: crazy-max/ghaction-docker-buildx@v1
-        with:
-          version: latest   
-      - name: Build and push
-        run: |
-          bash .github/cisetup.sh
-          task buildx-and-push
+kill $(ps -C java -o pid=)

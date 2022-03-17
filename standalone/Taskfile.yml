@@ -32,16 +32,16 @@ tasks:
 
   buildx-and-push:
     deps:
-     - compile
+      - compile
     cmds:
-     - docker buildx build --platform linux/amd64,linux/arm64 -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest . --push
+      - docker buildx build --platform linux/amd64,linux/arm64 -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest . --push
 
   buildx:
     deps:
-     - compile
+      - compile
     cmds:
-     - docker buildx create --use
-     - docker buildx build --platform linux/amd64 -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest .
+      - docker buildx create --use
+      - docker buildx build --platform linux/amd64 -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest .
 
   build:
     deps:
@@ -66,11 +66,11 @@ tasks:
 
   clean: 
     cmds:
-     - | 
-      rm lib/*.jar
-      cd ../openwhisk
-      rm bin/* 
-      ./gradlew clean 
+      - | 
+       rm lib/*.jar
+       cd ../openwhisk
+       rm bin/* 
+       ./gradlew clean 
     ignore_error: true
   
   run:

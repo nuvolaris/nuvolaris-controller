@@ -25,17 +25,13 @@ vars:
     sh: hostname -f
 
 tasks:
+  setup: 
+    silent: true
 
-  tag: git tag -d $(git tag) ; git tag -f {{.BASETAG}}.$(date +%y%m%d%H)
+  image-tag: git tag -d $(git tag) ; git tag -f {{.BASETAG}}.$(date +%y%m%d%H)
 
   buildx-and-push:
     dir: standalone
     cmds:
-     - task buildx-and-push
-
-  setup: 
-    silent: true
-  
-  show-tag: echo {{.TAG}}
-  update-tag: git tag -f {{.TAG}}
+      - task buildx-and-push
 
