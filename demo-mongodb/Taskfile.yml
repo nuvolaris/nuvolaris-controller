@@ -40,7 +40,6 @@ tasks:
     silent: true
     ignore_error: true
 
-
   kustomization:
     cmds:
       - |
@@ -82,6 +81,7 @@ tasks:
    cmds:
     - "{{.KUBECTL}} apply -k deploy/mongodb"
     - |
+      pip install pymongo
       connstring="mongodb://my-user:ow-str0ng-p4ssw0rd@localhost:27017"
       ansible-playbook ./deploy/ansible/initMongoDB.yml -e "mongodb_connect_string=$connstring" 
     - "{{.KUBECTL}} apply -k deploy/standalone-ow"
