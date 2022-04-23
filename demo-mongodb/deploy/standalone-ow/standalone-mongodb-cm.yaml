@@ -18,6 +18,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: nuvolaris-kcf.config
+  namespace: nuvolaris
   labels:
     app: nuvolaris-openwhisk
 data:
@@ -31,8 +32,8 @@ data:
         ArtifactStoreProvider = "org.apache.openwhisk.core.database.mongodb.MongoDBArtifactStoreProvider"
       }
       mongodb {
-        uri         = "mongodb://nuvolaris-couchdb.nuvolaris.svc.cluster.local:27017"  # DB Uri
-        database    = ""           # Database name
+        uri         = "mongodb://my-user:ow-str0ng-p4ssw0rd@mongo-svc.nuvolaris.svc.cluster.local:27017"  
+        database    = "whisks"
       }
       
       kubernetes {

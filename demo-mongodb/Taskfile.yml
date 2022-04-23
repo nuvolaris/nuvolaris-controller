@@ -44,7 +44,7 @@ tasks:
   kustomization:
     cmds:
       - |
-       cat <<__EOF__ >deploy/kustomization.yaml
+       cat <<__EOF__ >deploy/mongodb/kustomization.yaml
        apiVersion: kustomize.config.k8s.io/v1beta1
        kind: Kustomization
        images:
@@ -52,34 +52,44 @@ tasks:
          newTag: {{.TAG}}
        resources:
         - nuvolaris-ns.yaml
+        - ow-whisk-secret.yaml
+        - mongodb-creds-secret.yaml
+        - mongodb-svc.yaml
+        - mongodb-pod.yaml
+       __EOF__
+      - | 
+       cat <<__EOFW__ >deploy/standalone-ow/kustomization.yaml
+       apiVersion: kustomize.config.k8s.io/v1beta1
+       kind: Kustomization
+       images:
+       - name: {{.IMAGE}}
+         newTag: {{.TAG}}
+       resources:
+        - standalone-mongodb-cm.yaml
         - standalone-roles.yaml
         - standalone-deploy.yaml
-        - standalone-svc.yaml
-        - ow-whisk-cm.yaml
-        - ow-whisk-secret.yaml
-        - ow-db-cm.yaml
-        - ow-db-secret.yaml
-        - couchdb-pod.yaml
-        - couchdb-svc.yaml
-        - standalone-couchdb-cm.yaml
-        - couchdb-init-cm.yaml
-        - couchdb-init-job.yaml
-       __EOF__
-
+        - standalone-svc.yaml        
+       __EOFW__
+  
   kustomize:
    deps: ["kustomization"]
    cmds:
-     - "{{.KUBECTL}} kustomize deploy"
+     - "{{.KUBECTL}} kustomize deploy/mongodb"
+     - "{{.KUBECTL}} kustomize deploy/standalone-ow"
 
   deploy:
    deps: ["kustomization"]
    cmds:
-    - "{{.KUBECTL}} apply -k deploy"
+    - "{{.KUBECTL}} apply -k deploy/mongodb"
+    - |
+      connstring="mongodb://my-user:ow-str0ng-p4ssw0rd@localhost:27017"
+      ansible-playbook ./deploy/ansible/initMongoDB.yml -e "mongodb_connect_string=$connstring" 
+    - "{{.KUBECTL}} apply -k deploy/standalone-ow"
 
   undeploy:
-   deps: ["kustomization"]
+   #deps: ["kustomization"]
    cmds:
-    - "{{.KUBECTL}} delete -k deploy"
+    - "kubectl delete namespace nuvolaris"
   
   redeploy:
     deps: ["undeploy", "deploy"]
