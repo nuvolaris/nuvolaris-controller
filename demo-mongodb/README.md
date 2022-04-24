@@ -18,3 +18,28 @@
 #
 -->
 # MongoDB demo
+A simple demo using a standalone MongoDB instance as OpenWhisk's backend.
+## How to run the demo
+
+### 1. Deploy MongoDB and OpenWhisk in your KIND k8s cluster
+```shell
+task deploy
+```
+
+The deployment could take some time due to the configuration step (the Ansible playbook needs to wait for Mongo to be ready). 
+
+You can check its status by running:
+```shell
+task status
+```
+
+### 2. Execute the test action
+```shell
+task test
+```
+
+
+### 3. Cleanup
+```shell
+task undeploy
+```
