@@ -35,7 +35,7 @@ header:
     - '**/parthenon/**'
     - '**/go.sum'
     - '**/auth.guest'
-    - '**/auth.whisk-system'
+    - '**/auth.whisk.system'
  
 dependency:
   files:
