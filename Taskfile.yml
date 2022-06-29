@@ -17,10 +17,10 @@
 #
 version: '3'
 vars:
-  BASETAG: 0.2.0-trinity
+  BASETAG: 0.2.1-trinity
   IMAGE: ghcr.io/nuvolaris/openwhisk-standalone
   TAG:
-    sh: git describe --tags --abbrev=0 2>/dev/null || echo {{.MILESTONE}}-latest
+    sh: git describe --tags --abbrev=0 2>/dev/null 
   HOSTNAME:
     sh: hostname -f
 
