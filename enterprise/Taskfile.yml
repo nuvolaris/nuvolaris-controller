@@ -17,21 +17,47 @@
 #
 version: '3'
 vars:
-  MILESTONE: neo
+  MILESTONE: morpheus
   REPO: ghcr.io
-  IMAGE: nuvolaris/openwhisk-controller
+  USER: nuvolaris
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null || echo {{.MILESTONE}}-latest
-  HOSTNAME:
-    sh: hostname -f
-  RUNTIMES:
-    sh: cat etc/runtimes.json
-  CONTROLLER: "{{.REPO}}/{{.IMAGE}}:{{.TAG}}"
-  APIHOST: http://{{.HOSTNAME}}:8080
+  CONTROLLER: "{{.REPO}}/{{.USER}}/openwhisk-controller:{{.TAG}}"
+  INVOKER: "{{.REPO}}/{{.USER}}/openwhisk-invoker:{{.TAG}}"
   WHISK_SYSTEM: "789c46b1-71f6-4ed5-8c54-816aa4f8c502:abczO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
   GUEST: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
 
 tasks:
+
+  compile-controller:
+    dir: ../openwhisk
+    cmds:
+      - ./gradlew distTar
+    status:
+      - test -f core/controller/build/distributions/controller.tar
+
+  compile-invoker:
+    dir: ../openwhisk
+    cmds:
+      - ./gradlew distTar
+    status:
+      - test -f core/invoker/build/distributions/invoker.tar
+
+  unpack:
+    deps:
+      - compile-invoker
+      - compile-controller
+    cmds:
+      - tar xvf ../openwhisk/core/invoker/build/distributions/invoker.tar -C invoker --strip-components=1
+      - tar xvf ../openwhisk/core/controller/build/distributions/controller.tar -C controller --strip-components=1
+
+
+  clean: 
+    - cd ../openwhisk && ./gradlew clean 
+
+  mini-clean:
+    - rm -f ../openwhisk/core/invoker/build/distributions/controller.tar
+    - rm -f ../openwhisk/core/invoker/build/distributions/invoker.tar
 
   buildx-and-push:
     dir: standalone
@@ -46,15 +72,6 @@ tasks:
     cmds:
       - docker build . -t {{.CONTROLLER}} 
       
-  show-tag: echo {{.TAG}}
-
-  controller:
-    dir: ../openwhisk
-    cmds:
-      - ./gradlew distTar
-      - tar xvf core/controller/build/distributions/controller.tar -C ..
-    status:
-      - test -f ../controller/bin/controller
   
   admin:
     dir: ../openwhisk
@@ -71,10 +88,9 @@ tasks:
       - admin
       - controller
 
-  clean: |
-    rm -rvf bin lib
-    cd ../openwhisk && ./gradlew clean 
-    
+
+
+
   run:
     deps:
       - compile

@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 #
+attic/
 .vscode/
 .*-version
 kubeconfig
@@ -23,6 +24,8 @@ nodesource_setup.sh
 wsk
 .metals/
 docker/
-controller/lib/
-controller/bin/
+enterprise/controller/lib/
+enterprise/controller/bin/
+enterprise/invoker/lib/
+enterprise/invoker/bin/
 standalone/lib/

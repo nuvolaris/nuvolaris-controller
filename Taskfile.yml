@@ -18,17 +18,17 @@
 version: '3'
 vars:
   BASETAG: 0.3.0-morpheus
-  IMAGE: ghcr.io/nuvolaris/openwhisk-standalone
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null 
-  HOSTNAME:
-    sh: hostname -f
 
 tasks:
   setup: 
     silent: true
 
   image-tag: git tag -d $(git tag) ; git tag -f {{.BASETAG}}.$(date +%y%m%d%H) ; git tag
+
+  show-tag: echo {{.TAG}}
+
 
   buildx-and-push:
     dir: standalone
