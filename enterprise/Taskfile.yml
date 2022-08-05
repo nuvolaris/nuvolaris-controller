@@ -22,58 +22,34 @@ vars:
   USER: nuvolaris
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null || echo {{.MILESTONE}}-latest
-  CONTROLLER: "{{.REPO}}/{{.USER}}/openwhisk-controller:{{.TAG}}"
-  INVOKER: "{{.REPO}}/{{.USER}}/openwhisk-invoker:{{.TAG}}"
+  CONTROLLER_IMAGE: "{{.REPO}}/{{.USER}}/openwhisk-controller:{{.TAG}}"
+  INVOKER_IMAGE: "{{.REPO}}/{{.USER}}/openwhisk-invoker:{{.TAG}}"
   WHISK_SYSTEM: "789c46b1-71f6-4ed5-8c54-816aa4f8c502:abczO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
   GUEST: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
 
 tasks:
 
-  compile-controller:
+  compile:controller:
     dir: ../openwhisk
     cmds:
       - ./gradlew distTar
+      - >
+        tar xvf core/controller/build/distributions/controller.tar 
+        -C ../enterprise/controller --strip-components=1
     status:
-      - test -f core/controller/build/distributions/controller.tar
+      - test -d ../enterprise/controller/lib
 
-  compile-invoker:
+  compile:invoker:
     dir: ../openwhisk
     cmds:
       - ./gradlew distTar
+      - >
+        tar xvf core/invoker/build/distributions/invoker.tar 
+        -C ../enterprise/invoker --strip-components=1
     status:
-      - test -f core/invoker/build/distributions/invoker.tar
+      - test -d ../enterprise/controller/lib
 
-  unpack:
-    deps:
-      - compile-invoker
-      - compile-controller
-    cmds:
-      - tar xvf ../openwhisk/core/invoker/build/distributions/invoker.tar -C invoker --strip-components=1
-      - tar xvf ../openwhisk/core/controller/build/distributions/controller.tar -C controller --strip-components=1
-
-
-  clean: 
-    - cd ../openwhisk && ./gradlew clean 
-
-  mini-clean:
-    - rm -f ../openwhisk/core/invoker/build/distributions/controller.tar
-    - rm -f ../openwhisk/core/invoker/build/distributions/invoker.tar
-
-  buildx-and-push:
-    dir: standalone
-    deps:
-     - compile
-    cmds:
-     - docker buildx build --platform linux/amd64,linux/arm64 -t {{.CONTROLLER}} . --push
-
-  build:
-    deps: 
-      - compile
-    cmds:
-      - docker build . -t {{.CONTROLLER}} 
-      
-  
-  admin:
+  compile:admin:
     dir: ../openwhisk
     deps:
       - controller
@@ -85,11 +61,33 @@ tasks:
 
   compile:
     deps:
-      - admin
-      - controller
+      - compile:invoker
+      - compile:controller
+  
+  clean: 
+    - cd ../openwhisk && ./gradlew clean 
+
+  mini-clean:
+    - rm -f ../openwhisk/core/invoker/build/distributions/controller.tar
+    - rm -f ../openwhisk/core/invoker/build/distributions/invoker.tar
+    - rm -rvf controller/bin controller/lib
+    - rm -rvf invoker/bin invoker/lib
+
+  build:
+    deps: 
+      - compile
+    cmds:
+      - docker build  -t {{.CONTROLLER_IMAGE}} controller
+      - docker build  -t {{.INVOKER_IMAGE}} controller
 
 
 
+  buildx-and-push:
+    dir: standalone
+    deps:
+     - compile
+    cmds:
+     - docker buildx build --platform linux/amd64,linux/arm64 -t {{.CONTROLLER}} . --push
 
   run:
     deps:
