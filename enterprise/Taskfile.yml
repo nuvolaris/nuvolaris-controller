@@ -22,8 +22,8 @@ vars:
   USER: nuvolaris
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null || echo {{.MILESTONE}}-latest
-  CONTROLLER_IMAGE: "{{.REPO}}/{{.USER}}/openwhisk-controller:{{.TAG}}"
-  INVOKER_IMAGE: "{{.REPO}}/{{.USER}}/openwhisk-invoker:{{.TAG}}"
+  CONTROLLER_IMAGE: "{{.REPO}}/{{.USER}}/openwhisk-controller"
+  INVOKER_IMAGE: "{{.REPO}}/{{.USER}}/openwhisk-invoker"
   WHISK_SYSTEM: "789c46b1-71f6-4ed5-8c54-816aa4f8c502:abczO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
   GUEST: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
 
@@ -63,7 +63,21 @@ tasks:
     deps:
       - compile:invoker
       - compile:controller
-  
+
+  build:
+    deps:
+      - compile
+    cmds:
+      - docker build -t {{.CONTROLLER_IMAGE}}:{{.TAG}} controller
+      - docker build -t {{.INVOKER_IMAGE}}:{{.TAG}} invoker
+
+  build-and-load:
+    deps:
+      - build
+    cmds:
+      - kind load docker-image {{.CONTROLLER_IMAGE}}:{{.TAG}} --name=nuvolaris
+      - kind load docker-image {{.INVOKER_IMAGE}}:{{.TAG}} --name=nuvolaris
+
   clean: 
     - cd ../openwhisk && ./gradlew clean 
 
@@ -72,15 +86,6 @@ tasks:
     - rm -f ../openwhisk/core/invoker/build/distributions/invoker.tar
     - rm -rvf controller/bin controller/lib
     - rm -rvf invoker/bin invoker/lib
-
-  build:
-    deps: 
-      - compile
-    cmds:
-      - docker build  -t {{.CONTROLLER_IMAGE}} controller
-      - docker build  -t {{.INVOKER_IMAGE}} controller
-
-
 
   buildx-and-push:
     dir: standalone

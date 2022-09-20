@@ -6,7 +6,7 @@ vars:
 tasks:
 
   init:
-    - kubectl apply -f nssa.yaml
+    - kubectl apply -f init
     - kubectl config set-context --current --namespace nuvolaris
     
   couchdb: 
@@ -14,3 +14,4 @@ tasks:
 
   redpanda: 
      - kubectl {{.CMD}} -f redpanda
+

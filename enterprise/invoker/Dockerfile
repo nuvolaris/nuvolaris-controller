@@ -39,5 +39,4 @@ WORKDIR /home
 RUN  mkdir -p /home/etc/ /home/lib/ /home/bin/
 ADD lib/* /home/lib/
 ADD bin/* /home/bin/
-#ADD etc/* /home/etc/
-#ENTRYPOINT ["/bin/bash", "/home/bin/standalone"]
+ENTRYPOINT ["/bin/bash", "/home/bin/invoker"]

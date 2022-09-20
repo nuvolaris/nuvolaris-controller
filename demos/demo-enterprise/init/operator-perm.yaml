@@ -15,22 +15,23 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-version: '3'
-vars:
-  BASETAG: 0.3.0-morpheus
-  TAG:
-    sh: git describe --tags --abbrev=0 2>/dev/null 
-
-tasks:
-  setup: 
-    silent: true
-
-  image-tag: git tag -d $(git tag) ; git tag -f {{.BASETAG}}.$(date +%y%m%d%H) ; git tag
-
-  show-tag: echo {{.TAG}}
-
-  buildx-and-push:
-    dir: standalone
-    cmds:
-      - task buildx-and-push
-
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nuvolaris-operator
+  namespace: nuvolaris
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: nuvolaris-operator-crb
+  namespace: nuvolaris
+subjects:
+- kind: ServiceAccount
+  namespace: nuvolaris
+  name: nuvolaris-operator
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
