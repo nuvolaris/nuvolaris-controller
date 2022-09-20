@@ -17,7 +17,7 @@
 #
 version: '3'
 vars:
-  MILESTONE: neo
+  MILESTONE: morpheus
   USER: nuvolaris
   IMAGE: ghcr.io/{{.USER}}/openwhisk-standalone
   TAG:
