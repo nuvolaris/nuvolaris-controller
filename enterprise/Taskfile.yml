@@ -19,7 +19,7 @@ version: '3'
 vars:
   MILESTONE: morpheus
   REPO: ghcr.io
-  USER: nuvolaris
+  USER: msciabarra
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null || echo {{.MILESTONE}}-latest
   CONTROLLER_IMAGE: "{{.REPO}}/{{.USER}}/openwhisk-controller"
