@@ -20,6 +20,7 @@ version: '3'
 
 vars:
   NAMESPACE: demo-https
+  CERTNAMESPACE: cert-manager
   KUBECTL: "kubectl --namespace {{.NAMESPACE}}"
 
 tasks:
@@ -33,3 +34,34 @@ tasks:
       - "{{.KUBECTL}} get svc"
     silent: true
     ignore_error: true
+
+  watch: "watch kubectl -n {{.NAMESPACE}} get deploy,pod,service,ingress,Issuers"
+  watch-cm: "watch kubectl -n {{.CERTNAMESPACE}} get deploy,pod,service,ingress,Issuers,ClusterIssuers,Certificates,CertificateRequests,Orders,Challenges"
+
+  setup-cm:
+    cmds:
+      - kubectl apply -f ns/cert-manager-namespace.yaml
+      - kubectl apply -f certificates/cert-manager.yaml
+      - "until kubectl get svc -n {{.CERTNAMESPACE}} ; do date; sleep 1; echo ''; done"     
+
+  deploy:
+    cmds:
+      - kubectl apply -f ns/namespace.yaml
+      - "kubectl -n {{.NAMESPACE}} apply -f services/echo1.yaml"
+      - "kubectl -n {{.NAMESPACE}} apply -f services/echo2.yaml"
+      - until kubectl get svc --all-namespaces ; do date; sleep 1; echo ""; done
+      - "kubectl apply -n {{.NAMESPACE}} -f certificates/self-signed-issuer.yaml"  
+      - "kubectl -n {{.NAMESPACE}} apply -f ingress/echo-ingress.yaml"
+
+  clean:
+    cmds:
+      - cmd: "kubectl -n {{.NAMESPACE}} delete all --all"
+        ignore_error: true
+      - cmd: "kubectl -n {{.NAMESPACE}} delete pvc --all"
+        ignore_error: true
+      - cmd: "kubectl -n {{.NAMESPACE}} delete ing --all"
+        ignore_error: true
+      - cmd: "kubectl -n {{.NAMESPACE}} delete deployments --all"
+        ignore_error: true
+      - cmd: "kubectl -n {{.CERTNAMESPACE}} delete all --all"
+        ignore_error: true        
