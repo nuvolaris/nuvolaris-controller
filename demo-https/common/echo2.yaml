@@ -16,9 +16,37 @@
 # under the License.
 #
 ---
-apiVersion: cert-manager.io/v1
-kind: Issuer
+apiVersion: v1
+kind: Service
 metadata:
- name: letsencrypt-staging
+  name: echo2
 spec:
-  selfSigned: {}
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: echo2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo2
+spec:
+  selector:
+    matchLabels:
+      app: echo2
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: echo2
+    spec:
+      containers:
+      - image: ealen/echo-server:latest
+        imagePullPolicy: IfNotPresent
+        name: echo2
+        ports:
+        - containerPort: 80
+        env:
+        - name: PORT
+          value: "80"

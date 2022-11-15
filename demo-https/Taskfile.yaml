@@ -21,7 +21,12 @@ version: '3'
 vars:
   NAMESPACE: demo-https
   CERTNAMESPACE: cert-manager
+  NGINXNAMESPACE: ingress-nginx
   KUBECTL: "kubectl --namespace {{.NAMESPACE}}"
+
+includes:
+  eks:
+    taskfile: Taskfile-eks.yaml
 
 tasks:
   status:
@@ -35,25 +40,25 @@ tasks:
     silent: true
     ignore_error: true
 
-  watch: "watch kubectl -n {{.NAMESPACE}} get deploy,pod,service,ingress,Issuers"
+  watch: "watch kubectl -n {{.NAMESPACE}} get deploy,pod,service,ingress,Issuers,ClusterIssuers,Certificates,CertificateRequests,Orders,Challenges"
   watch-cm: "watch kubectl -n {{.CERTNAMESPACE}} get deploy,pod,service,ingress,Issuers,ClusterIssuers,Certificates,CertificateRequests,Orders,Challenges"
+  watch-ng: "watch kubectl -n {{.NGINXNAMESPACE}} get deploy,pod,service,ingress"
 
   setup-cm:
     cmds:
-      - kubectl apply -f ns/cert-manager-namespace.yaml
-      - kubectl apply -f certificates/cert-manager.yaml
-      - "until kubectl get svc -n {{.CERTNAMESPACE}} ; do date; sleep 1; echo ''; done"     
+      - kubectl apply -f cert-manager/cert-manager.yaml
+      - "until kubectl get pod,svc -n {{.CERTNAMESPACE}} ; do date; sleep 1; echo ''; done"     
 
   deploy:
     cmds:
-      - kubectl apply -f ns/namespace.yaml
-      - "kubectl -n {{.NAMESPACE}} apply -f services/echo1.yaml"
-      - "kubectl -n {{.NAMESPACE}} apply -f services/echo2.yaml"
+      - kubectl apply -f common/namespace.yaml
+      - "kubectl -n {{.NAMESPACE}} apply -f common/echo1.yaml"
+      - "kubectl -n {{.NAMESPACE}} apply -f common/echo2.yaml"
       - until kubectl get svc --all-namespaces ; do date; sleep 1; echo ""; done
-      - "kubectl apply -n {{.NAMESPACE}} -f certificates/self-signed-issuer.yaml"  
-      - "kubectl -n {{.NAMESPACE}} apply -f ingress/echo-ingress.yaml"
+      - "kubectl apply -f cert-manager/self-signed-issuer.yaml"  
+      - "kubectl -n {{.NAMESPACE}} apply -f standard/echo-ingress.yaml"
 
-  clean:
+  clean-all:
     cmds:
       - cmd: "kubectl -n {{.NAMESPACE}} delete all --all"
         ignore_error: true
@@ -64,4 +69,45 @@ tasks:
       - cmd: "kubectl -n {{.NAMESPACE}} delete deployments --all"
         ignore_error: true
       - cmd: "kubectl -n {{.CERTNAMESPACE}} delete all --all"
+        ignore_error: true 
+      - cmd: "kubectl -n {{.NGINXNAMESPACE}} delete all --all"
+        ignore_error: true           
+
+  clean:
+    cmds:
+      - cmd: "kubectl -n {{.NAMESPACE}} delete all --all"
+        ignore_error: true
+      - cmd: "kubectl -n {{.NAMESPACE}} delete pvc --all"
+        ignore_error: true
+      - cmd: "kubectl -n {{.NAMESPACE}} delete ing --all"
+        ignore_error: true
+      - cmd: "kubectl -n {{.NAMESPACE}} delete Issuers --all"
         ignore_error: true        
+      - cmd: "kubectl -n {{.NAMESPACE}} delete deployments --all"
+        ignore_error: true
+
+  eks-create:
+    - task: eks:create
+
+  eks-destroy:
+    - task: eks:destroy
+
+  eks-list:
+    - task: eks:list
+
+  eks-config:
+    - task: eks:config
+
+  eks-avail-addons:
+    - task: eks:avail-addons  
+
+  eks-list-addon:
+    - task: eks:list-addon
+
+  eks-setup-vs:     
+     - task: eks:setup-vs
+
+  eks-deploy:     
+     - task: eks:deploy
+
+ 

@@ -16,22 +16,37 @@
 # under the License.
 #
 ---
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
+apiVersion: v1
+kind: Service
 metadata:
-  name: letsencrypt-prod
-  namespace: cert-manager
+  name: echo1
 spec:
-  acme:
-    # The ACME server URL
-    server: https://acme-v02.api.letsencrypt.org/directory
-    # Email address used for ACME registration
-    email: francesco@nuvolaris.io
-    # Name of a secret used to store the ACME account private key
-    privateKeySecretRef:
-      name: letsencrypt-prod
-    # Enable the HTTP-01 challenge provider
-    solvers:
-    - http01:
-        ingress:
-          class: nginx
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: echo1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo1
+spec:
+  selector:
+    matchLabels:
+      app: echo1
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: echo1
+    spec:
+      containers:
+      - image: ealen/echo-server:latest
+        imagePullPolicy: IfNotPresent
+        name: echo1
+        ports:
+        - containerPort: 80
+        env:
+        - name: PORT
+          value: "80"

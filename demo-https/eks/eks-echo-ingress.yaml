@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: echo-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  tls:
+    - hosts:
+      - securedemo-nuvolaris.eu
+      secretName: letsencrypt-staging
+  rules:
+  - host: securedemo-nuvolaris.eu
+    http:
+        paths:
+        - pathType: Prefix
+          path: "/echo1"
+          backend:
+            service:
+              name: echo1
+              port:
+                number: 80
+        - pathType: Prefix
+          path: "/echo2"
+          backend:
+            service:
+              name: echo2
+              port:
+                number: 80
