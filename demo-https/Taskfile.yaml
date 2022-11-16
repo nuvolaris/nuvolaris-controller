@@ -27,6 +27,8 @@ vars:
 includes:
   eks:
     taskfile: Taskfile-eks.yaml
+  k8s:
+    taskfile: Taskfile-microk8s.yaml
 
 tasks:
   status:
@@ -43,6 +45,7 @@ tasks:
   watch: "watch kubectl -n {{.NAMESPACE}} get deploy,pod,service,ingress,Issuers,ClusterIssuers,Certificates,CertificateRequests,Orders,Challenges"
   watch-cm: "watch kubectl -n {{.CERTNAMESPACE}} get deploy,pod,service,ingress,Issuers,ClusterIssuers,Certificates,CertificateRequests,Orders,Challenges"
   watch-ng: "watch kubectl -n {{.NGINXNAMESPACE}} get deploy,pod,service,ingress"
+  watch-k8sng: "watch kubectl -n ingress get deploy,pod,service,ingress"
 
   setup-cm:
     cmds:
@@ -110,4 +113,14 @@ tasks:
   eks-deploy:     
      - task: eks:deploy
 
- 
+  k8s-create:
+    - task: k8s:create 
+
+  k8s-destroy:
+    - task: k8s:destroy
+
+  k8s-config:
+    - task: k8s:config    
+
+  k8s-deploy:
+    - task: k8s:deploy
