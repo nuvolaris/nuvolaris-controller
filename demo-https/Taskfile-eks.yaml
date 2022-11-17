@@ -25,8 +25,6 @@ tasks:
   destroy: 
     - eksctl delete cluster -f eks/eks-cluster.yml --profile default
   
-  
-
   list: eksctl get cluster
 
   config: |-
@@ -47,6 +45,7 @@ tasks:
 
   deploy:    
     cmds:
+      - kubectl apply -f cert-manager/cert-manager.yaml
       - kubectl apply -f cert-manager/staging-issuer.yaml
       - kubectl apply -f cert-manager/prod-issuer.yaml
       - kubectl apply -f common/namespace.yaml

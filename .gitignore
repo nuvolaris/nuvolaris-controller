@@ -27,3 +27,4 @@ docker/
 controller/lib/
 controller/bin/
 standalone/lib/
+env.sample

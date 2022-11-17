@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-# Sample configuration script ro create a microk8s accessible via the public ip address on an AWS EC2 instance.
+# Sample configuration script to create a microk8s cluster accessible via the public ip address on an AWS EC2 instance.
 DNS="$(curl -s checkip.amazonaws.com).nip.io"
 echo $DNS
 sudo apt update

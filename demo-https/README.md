@@ -41,4 +41,5 @@ The showcase covers different kubernetes deployment scenarios
 >* [local](standard/KIND.md)
 >* [microk8s](microk8s/MICROK8S.md)
 >* [AWS EKS](eks/EKS.md)
->* Azure
+>* [LKS (Akamai Cloud Computing)](lks/LKS.md)
+>* Azure (Available as PR)

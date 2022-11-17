@@ -29,6 +29,8 @@ includes:
     taskfile: Taskfile-eks.yaml
   k8s:
     taskfile: Taskfile-microk8s.yaml
+  lks:
+    taskfile: Taskfile-lks.yaml    
 
 tasks:
   status:
@@ -89,6 +91,7 @@ tasks:
       - cmd: "kubectl -n {{.NAMESPACE}} delete deployments --all"
         ignore_error: true
 
+# AWS EKS tasks
   eks-create:
     - task: eks:create
 
@@ -113,6 +116,7 @@ tasks:
   eks-deploy:     
      - task: eks:deploy
 
+# MICROK8s tasks
   k8s-create:
     - task: k8s:create 
 
@@ -124,3 +128,19 @@ tasks:
 
   k8s-deploy:
     - task: k8s:deploy
+
+# LKS (Linode) tasks
+  lks-create:
+    - task: lks:create 
+
+  lks-destroy:
+    - task: lks:destroy
+
+  lks-config:
+    - task: lks:config    
+
+  lks-setup:
+    - task: lks:setup
+
+  lks-deploy:
+    - task: lks:deploy
