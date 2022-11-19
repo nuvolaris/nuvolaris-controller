@@ -1,0 +1,146 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+version: '3'
+
+
+vars:
+  NAMESPACE: demo-https
+  CERTNAMESPACE: cert-manager
+  NGINXNAMESPACE: ingress-nginx
+  KUBECTL: "kubectl --namespace {{.NAMESPACE}}"
+
+includes:
+  eks:
+    taskfile: Taskfile-eks.yaml
+  k8s:
+    taskfile: Taskfile-microk8s.yaml
+  lks:
+    taskfile: Taskfile-lks.yaml    
+
+tasks:
+  status:
+    cmds:
+      - echo "*** Nodes"
+      - "{{.KUBECTL}} get nodes"
+      - echo "*** Pods"
+      - "{{.KUBECTL}} get po"
+      - echo "*** Services"
+      - "{{.KUBECTL}} get svc"
+    silent: true
+    ignore_error: true
+
+  watch: "watch kubectl -n {{.NAMESPACE}} get deploy,pod,service,ingress,Issuers,ClusterIssuers,Certificates,CertificateRequests,Orders,Challenges"
+  watch-cm: "watch kubectl -n {{.CERTNAMESPACE}} get deploy,pod,service,ingress,Issuers,ClusterIssuers,Certificates,CertificateRequests,Orders,Challenges"
+  watch-ng: "watch kubectl -n {{.NGINXNAMESPACE}} get deploy,pod,service,ingress"
+  watch-k8sng: "watch kubectl -n ingress get deploy,pod,service,ingress"
+
+  setup-cm:
+    cmds:
+      - kubectl apply -f cert-manager/cert-manager.yaml
+      - "until kubectl get pod,svc -n {{.CERTNAMESPACE}} ; do date; sleep 1; echo ''; done"     
+
+  deploy:
+    cmds:
+      - kubectl apply -f common/namespace.yaml
+      - "kubectl -n {{.NAMESPACE}} apply -f common/echo1.yaml"
+      - "kubectl -n {{.NAMESPACE}} apply -f common/echo2.yaml"
+      - until kubectl get svc --all-namespaces ; do date; sleep 1; echo ""; done
+      - "kubectl apply -f cert-manager/self-signed-issuer.yaml"  
+      - "kubectl -n {{.NAMESPACE}} apply -f standard/echo-ingress.yaml"
+
+  clean-all:
+    cmds:
+      - cmd: "kubectl -n {{.NAMESPACE}} delete all --all"
+        ignore_error: true
+      - cmd: "kubectl -n {{.NAMESPACE}} delete pvc --all"
+        ignore_error: true
+      - cmd: "kubectl -n {{.NAMESPACE}} delete ing --all"
+        ignore_error: true
+      - cmd: "kubectl -n {{.NAMESPACE}} delete deployments --all"
+        ignore_error: true
+      - cmd: "kubectl -n {{.CERTNAMESPACE}} delete all --all"
+        ignore_error: true 
+      - cmd: "kubectl -n {{.NGINXNAMESPACE}} delete all --all"
+        ignore_error: true           
+
+  clean:
+    cmds:
+      - cmd: "kubectl -n {{.NAMESPACE}} delete all --all"
+        ignore_error: true
+      - cmd: "kubectl -n {{.NAMESPACE}} delete pvc --all"
+        ignore_error: true
+      - cmd: "kubectl -n {{.NAMESPACE}} delete ing --all"
+        ignore_error: true
+      - cmd: "kubectl -n {{.NAMESPACE}} delete Issuers --all"
+        ignore_error: true        
+      - cmd: "kubectl -n {{.NAMESPACE}} delete deployments --all"
+        ignore_error: true
+
+# AWS EKS tasks
+  eks-create:
+    - task: eks:create
+
+  eks-destroy:
+    - task: eks:destroy
+
+  eks-list:
+    - task: eks:list
+
+  eks-config:
+    - task: eks:config
+
+  eks-avail-addons:
+    - task: eks:avail-addons  
+
+  eks-list-addon:
+    - task: eks:list-addon
+
+  eks-setup-vs:     
+     - task: eks:setup-vs
+
+  eks-deploy:     
+     - task: eks:deploy
+
+# MICROK8s tasks
+  k8s-create:
+    - task: k8s:create 
+
+  k8s-destroy:
+    - task: k8s:destroy
+
+  k8s-config:
+    - task: k8s:config    
+
+  k8s-deploy:
+    - task: k8s:deploy
+
+# LKS (Linode) tasks
+  lks-create:
+    - task: lks:create 
+
+  lks-destroy:
+    - task: lks:destroy
+
+  lks-config:
+    - task: lks:config    
+
+  lks-setup:
+    - task: lks:setup
+
+  lks-deploy:
+    - task: lks:deploy

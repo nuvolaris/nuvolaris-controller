@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: echo-ingress
+  namespace: demo-https
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  tls:
+    - hosts:
+      - 139-144-159-177.ip.linodeusercontent.com
+      secretName: letsencrypt-prod
+  rules:
+  - host: 139-144-159-177.ip.linodeusercontent.com
+    http:
+        paths:
+        - pathType: Prefix
+          path: "/echo1"
+          backend:
+            service:
+              name: echo1
+              port:
+                number: 80
+        - pathType: Prefix
+          path: "/echo2"
+          backend:
+            service:
+              name: echo2
+              port:
+                number: 80

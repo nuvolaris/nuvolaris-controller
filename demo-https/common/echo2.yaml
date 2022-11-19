@@ -15,16 +15,38 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-.vscode/
-.*-version
-kubeconfig
-*.kubeconfig
-kustomization.yaml
-nodesource_setup.sh
-wsk
-.metals/
-docker/
-controller/lib/
-controller/bin/
-standalone/lib/
-env.sample
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo2
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: echo2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo2
+spec:
+  selector:
+    matchLabels:
+      app: echo2
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: echo2
+    spec:
+      containers:
+      - image: ealen/echo-server:latest
+        imagePullPolicy: IfNotPresent
+        name: echo2
+        ports:
+        - containerPort: 80
+        env:
+        - name: PORT
+          value: "80"

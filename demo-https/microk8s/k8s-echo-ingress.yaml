@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: echo-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # it is essential this is set to public in accordance to the microk8s ingress add-on setup (similarly as the ClusterIssuer)
+    kubernetes.io/ingress.class: "public"
+spec:
+  tls:
+    - hosts:
+      - 54.196.247.123.nip.io
+      secretName: letsencrypt-prod
+  rules:
+  - host: 54.196.247.123.nip.io
+    http:
+        paths:
+        - pathType: Prefix
+          path: "/echo1"
+          backend:
+            service:
+              name: echo1
+              port:
+                number: 80
+        - pathType: Prefix
+          path: "/echo2"
+          backend:
+            service:
+              name: echo2
+              port:
+                number: 80

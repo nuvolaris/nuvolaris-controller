@@ -14,17 +14,10 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-#
-.vscode/
-.*-version
-kubeconfig
-*.kubeconfig
-kustomization.yaml
-nodesource_setup.sh
-wsk
-.metals/
-docker/
-controller/lib/
-controller/bin/
-standalone/lib/
-env.sample
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo-https
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx

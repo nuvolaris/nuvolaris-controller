@@ -15,16 +15,35 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-.vscode/
-.*-version
-kubeconfig
-*.kubeconfig
-kustomization.yaml
-nodesource_setup.sh
-wsk
-.metals/
-docker/
-controller/lib/
-controller/bin/
-standalone/lib/
-env.sample
+---
+apiVersion: k8s.nginx.org/v1
+kind: VirtualServer
+metadata:
+  name: secure-demo
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    kubernetes.io/ingress.class: "nginx"  
+spec:
+  host: securedemo-nuvolaris.eu
+  tls:
+    secret: letsencrypt-staging
+    redirect:
+      enable: true
+  upstreams:
+  - name: echo1
+    service: echo1
+    port: 80
+    tls:
+      enable: false
+  - name: echo2
+    service: echo2
+    port: 80
+    tls:
+      enable: false      
+  routes:
+  - path: /echo1
+    action:
+      pass: echo1
+  - path: /echo2
+    action:
+      pass: echo2      

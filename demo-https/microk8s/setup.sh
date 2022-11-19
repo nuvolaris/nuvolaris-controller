@@ -15,16 +15,17 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-.vscode/
-.*-version
-kubeconfig
-*.kubeconfig
-kustomization.yaml
-nodesource_setup.sh
-wsk
-.metals/
-docker/
-controller/lib/
-controller/bin/
-standalone/lib/
-env.sample
+# Sample configuration script to create a microk8s cluster accessible via the public ip address on an AWS EC2 instance.
+DNS="$(curl -s checkip.amazonaws.com).nip.io"
+echo $DNS
+sudo apt update
+sudo apt install -y snapd
+sudo snap install microk8s --classic
+sudo microk8s enable hostpath-storage dns cert-manager ingress
+while microk8s kubectl get nodes | grep NotReady
+  do sleep 5
+done
+sudo microk8s stop
+sed -i "/DNS.5/a DNS.6 = $DNS" /var/snap/microk8s/current/certs/csr.conf.template
+sudo microk8s start
+sudo microk8s config | sed -e "s/server: .*/server: https:\/\/$DNS:16443/" > kubeconfig
