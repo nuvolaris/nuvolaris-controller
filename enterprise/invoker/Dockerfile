@@ -16,11 +16,13 @@
 # under the License.
 #
 FROM ubuntu:20.04
+LABEL maintainer="Michele Sciabarra michele@nuvolaris.io"
 # configure dpkg && timezone
 ENV TZ=Europe/London
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections ;\
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime ;\
-    echo $TZ > /etc/timezone
+    echo $TZ > /etc/timezone ;\
+    useradd -m -d /home nuvolaris
 # add docker and java (amazon corretto) repos
 RUN apt-get update && apt-get -y upgrade &&\
     apt-get -y install \
@@ -36,7 +38,12 @@ RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/d
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor > /usr/share/keyrings/docker-archive-keyring.gpg ;\
     apt-get update && apt-get -y install docker-ce-cli
 WORKDIR /home
-RUN  mkdir -p /home/etc/ /home/lib/ /home/bin/
+ENV HOME=/home
+RUN mkdir -p /home/etc/ /home/lib/ /home/bin/
 ADD lib/* /home/lib/
 ADD bin/* /home/bin/
+RUN chown -Rvf nuvolaris:root /home ;\
+    chgrp -R root /home ;\
+    chmod -R g=u /home
+USER nuvolaris
 ENTRYPOINT ["/bin/bash", "/home/bin/invoker"]

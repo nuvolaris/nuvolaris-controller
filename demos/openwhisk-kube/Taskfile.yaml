@@ -10,9 +10,9 @@ tasks:
     - | 
       if test -z "{{.FILE}}"
       then ls "{{.TPL}}/templates" ; echo select with "FILE=<file>" no .yaml
-      else helm template {{.TPL}} \
+      else helm template nuvolaris {{.TPL}} \
       -n nuvolaris -f openwhisk-deploy-kube/deploy/kind/mycluster.yaml \
-      -s  templates/{{.FILE}}.yaml | tee export/{{.FILE}}.yaml
+      -s  templates/{{.F}}.yaml | tee export/{{.F}}.yaml
       fi
     vars:
       TPL: openwhisk-deploy-kube/helm/openwhisk

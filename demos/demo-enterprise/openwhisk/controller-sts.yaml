@@ -16,11 +16,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: openwhisk-controller
   labels:
+    name: openwhisk-controller
     app: openwhisk-controller
 spec:
   serviceName: openwhisk-controller
@@ -28,26 +30,46 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: openwhisk-controller
+      name: openwhisk-controller
   template:
     metadata:
       labels:
-        app: openwhisk-controller
+        name: openwhisk-controller
+        heritage: "Helm"
+        release: "openwhisk"
+        chart: "openwhisk-1.0.1"
+        app: openwhisk-openwhisk
 
     spec:
       serviceAccountName: openwhisk-core
       restartPolicy: Always
 
+      initContainers:
+      # The controller must wait for kafka and/or couchdb to be ready before it starts
+      - name: "wait-for-kafka"
+        image: "openwhisk/ow-utils:ef725a6"
+        imagePullPolicy: "IfNotPresent"
+        command: ["sh", "-c", 'cacert="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"; token="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"; while true; do rc=$(curl -sS --cacert $cacert --header "Authorization: Bearer $token" https://kubernetes.default.svc/api/v1/namespaces/nuvolaris/endpoints/openwhisk-kafka | jq -r ".subsets[].addresses | length"); echo "num ready kafka endpoints is $rc"; if [ $rc -gt 0 ]; then echo "Success: ready kafka endpoint!"; break; fi; echo "kafka not ready yet; sleeping for 3 seconds"; sleep 3; done;']
+      - name: "wait-for-couchdb"
+        image: "busybox:latest"
+        imagePullPolicy: "IfNotPresent"
+        env:
+        - name: "READINESS_URL"
+          value: http://openwhisk-couchdb.nuvolaris.svc.cluster.local:5984/ow_kube_couchdb_initialized_marker
+        command: ["sh", "-c", "while true; do echo 'checking CouchDB readiness'; wget -T 5 --spider $READINESS_URL --header=\"Authorization: Basic d2hpc2tfYWRtaW46c29tZV9wYXNzdzByZA==\"; result=$?; if [ $result -eq 0 ]; then echo 'Success: CouchDB is ready!'; break; fi; echo '...not ready yet; sleeping 3 seconds before retry'; sleep 3; done;"]
+      # The lean controller requires invoker volumes mounts
+      
+
       containers:
       - name: controller
         imagePullPolicy: "IfNotPresent"
-        image: "ghcr.io/nuvolaris/openwhisk-controller:0.3.0-morpheus.22072918"
+        image: "openwhisk/controller:ef725a6"
         command: ["/bin/bash", "-c", "/init.sh `hostname | awk -F '-' '{print $NF}'`"]
         ports:
         - name: controller
           containerPort: 8080
         - name: akka-remoting
-          containerPort: 2552
+          containerPort: 25520
         - name: akka-mgmt-http
           containerPort: 19999
         livenessProbe:
@@ -73,15 +95,20 @@ spec:
         - name: "TZ"
           value: "UTC"
 
+        - name: "POD_IP"
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+
         - name:  "CONFIG_whisk_info_date"
           valueFrom:
             configMapKeyRef:
-              name: RELEASE-NAME-whisk.config
+              name: openwhisk-whisk.config
               key: whisk_info_date
         - name: "CONFIG_whisk_info_buildNo"
           valueFrom:
             configMapKeyRef:
-              name: RELEASE-NAME-whisk.config
+              name: openwhisk-whisk.config
               key: whisk_info_buildNo
 
         # Java options
@@ -94,7 +121,10 @@ spec:
 
         # action runtimes
         - name: "RUNTIMES_MANIFEST"
-          value: "{\n    \"runtimes\": {\n        \"nodejs\": [\n            {\n                \"kind\": \"nodejs:12\",\n                \"default\": false,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-nodejs-v12\",\n                    \"tag\": \"1.19.0\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            },\n            {\n                \"kind\": \"nodejs:14\",\n                \"default\": true,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-nodejs-v14\",\n                    \"tag\": \"1.19.0\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                },\n                \"stemCells\": [\n                    {\n                        \"initialCount\": 2,\n                        \"memory\": \"256 MB\",\n                        \"reactive\": {\n                            \"minCount\": 1,\n                            \"maxCount\": 4,\n                            \"ttl\": \"2 minutes\",\n                            \"threshold\": 1,\n                            \"increment\": 1\n                        }\n                    }\n                ]\n            }\n        ],\n        \"python\": [\n            {\n                \"kind\": \"python:3\",\n                \"default\": true,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-python-v3.7\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            }\n        ],\n        \"swift\": [\n            {\n                \"kind\": \"swift:4.2\",\n                \"default\": true,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-swift-v4.2\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            },\n            {\n                \"kind\": \"swift:5.1\",\n                \"default\": false,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-swift-v5.1\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            },\n            {\n                \"kind\": \"swift:5.3\",\n                \"default\": false,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-swift-v5.3\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            },\n            {\n                \"kind\": \"swift:5.4\",\n                \"default\": false,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-swift-v5.4\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            }\n        ],\n        \"java\": [\n            {\n                \"kind\": \"java:8\",\n                \"default\": true,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"java8action\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"jarfile\",\n                    \"attachmentType\": \"application/java-archive\"\n                },\n                \"requireMain\": true\n            }\n        ],\n        \"php\": [\n            {\n                \"kind\": \"php:7.3\",\n                \"default\": false,\n                \"deprecated\": false,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-php-v7.3\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            },\n            {\n                \"kind\": \"php:7.4\",\n                \"default\": true,\n                \"deprecated\": false,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-php-v7.4\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            },\n            {\n                \"kind\": \"php:8.0\",\n                \"default\": false,\n                \"deprecated\": false,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-php-v7.4\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            }\n        ],\n        \"ruby\": [\n            {\n                \"kind\": \"ruby:2.5\",\n                \"default\": true,\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                },\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-ruby-v2.5\",\n                    \"tag\": \"1.17.0\"\n                }\n            }\n        ],\n        \"go\": [\n            {\n                \"kind\": \"go:1.15\",\n                \"default\": true,\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                },\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-golang-v1.15\",\n                    \"tag\": \"1.18.0\"\n                }\n            }\n        ],\n        \"rust\": [\n            {\n                \"kind\": \"rust:1.34\",\n                \"default\": true,\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                },\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-rust-v1.34\",\n                    \"tag\": \"1.3.0\"\n                }\n            }\n        ],\n        \"dotnet\": [\n            {\n                \"kind\": \"dotnet:2.2\",\n                \"default\": true,\n                \"deprecated\": false,\n                \"requireMain\": true,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-dotnet-v2.2\",\n                    \"tag\": \"1.16.0\"\n                },\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            },\n            {\n                \"kind\": \"dotnet:3.1\",\n                \"default\": false,\n                \"deprecated\": false,\n                \"requireMain\": true,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-dotnet-v3.1\",\n                    \"tag\": \"1.16.0\"\n                },\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            }\n        ],\n        \"ballerina\": [\n            {\n                \"kind\": \"ballerina:0.990\",\n                \"default\": true,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-ballerina-v0.990.2\",\n                    \"tag\": \"nightly\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            }\n        ]\n    },\n    \"blackboxes\": [\n        {\n            \"prefix\": \"openwhisk\",\n            \"name\": \"dockerskeleton\",\n            \"tag\": \"1.14.0\"\n        }\n    ]\n}\n"
+          value: "{\n    \"runtimes\": {\n        \"nodejs\": [\n            {\n                \"kind\": \"nodejs:14\",\n                \"default\": true,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-nodejs-v14\",\n                    \"tag\": \"1.20.0\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                },\n                \"stemCells\": [\n                    {\n                        \"initialCount\": 2,\n                        \"memory\": \"256 MB\",\n                        \"reactive\": {\n                            \"minCount\": 1,\n                            \"maxCount\": 4,\n                            \"ttl\": \"2 minutes\",\n                            \"threshold\": 1,\n                            \"increment\": 1\n                        }\n                    }\n                ]\n            },\n            {\n                \"kind\": \"nodejs:16\",\n                \"default\": false,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-nodejs-v16\",\n                    \"tag\": \"1.20.0\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            }\n        ],\n        \"python\": [\n            {\n                \"kind\": \"python:3\",\n                \"default\": true,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-python-v3.7\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            }\n        ],\n        \"swift\": [\n            {\n                \"kind\": \"swift:4.2\",\n                \"default\": true,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-swift-v4.2\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            },\n            {\n                \"kind\": \"swift:5.1\",\n                \"default\": false,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-swift-v5.1\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            },\n            {\n                \"kind\": \"swift:5.3\",\n                \"default\": false,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-swift-v5.3\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            },\n            {\n                \"kind\": \"swift:5.4\",\n                \"default\": false,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-swift-v5.4\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            }\n        ],\n        \"java\": [\n            {\n                \"kind\": \"java:8\",\n                \"default\": true,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"java8action\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"jarfile\",\n                    \"attachmentType\": \"application/java-archive\"\n                },\n                \"requireMain\": true\n            }\n        ],\n        \"php\": [\n            {\n                \"kind\": \"php:7.3\",\n                \"default\": false,\n                \"deprecated\": false,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-php-v7.3\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            },\n            {\n                \"kind\": \"php:7.4\",\n                \"default\": true,\n                \"deprecated\": false,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-php-v7.4\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            },\n            {\n                \"kind\": \"php:8.0\",\n                \"default\": false,\n                \"deprecated\": false,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-php-v7.4\",\n                    \"tag\": \"1.17.0\"\n                },\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            }\n        ],\n        \"ruby\": [\n            {\n                \"kind\": \"ruby:2.5\",\n                \"default\": true,\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                },\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-ruby-v2.5\",\n                    \"tag\": \"1.17.0\"\n                }\n            }\n        ],\n        \"go\": [\n            {\n                \"kind\": \"go:1.17\",\n                \"default\": true,\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                },\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-golang-v1.17\",\n                    \"tag\": \"1.20.0\"\n                }\n            }\n        ],\n        \"rust\": [\n            {\n                \"kind\": \"rust:1.34\",\n                \"default\": true,\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                },\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-rust-v1.34\",\n                    \"tag\": \"1.3.0\"\n                }\n            }\n        ],\n        \"dotnet\": [\n            {\n                \"kind\": \"dotnet:2.2\",\n                \"default\": true,\n                \"deprecated\": false,\n                \"requireMain\": true,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-dotnet-v2.2\",\n                    \"tag\": \"1.16.0\"\n                },\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            },\n            {\n                \"kind\": \"dotnet:3.1\",\n                \"default\": false,\n                \"deprecated\": false,\n                \"requireMain\": true,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-dotnet-v3.1\",\n                    \"tag\": \"1.16.0\"\n                },\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            }\n        ],\n        \"ballerina\": [\n            {\n                \"kind\": \"ballerina:0.990\",\n                \"default\": true,\n                \"image\": {\n                    \"prefix\": \"openwhisk\",\n                    \"name\": \"action-ballerina-v0.990.2\",\n                    \"tag\": \"nightly\"\n                },\n                \"deprecated\": false,\n                \"attached\": {\n                    \"attachmentName\": \"codefile\",\n                    \"attachmentType\": \"text/plain\"\n                }\n            }\n        ]\n    },\n    \"blackboxes\": [\n        {\n            \"prefix\": \"openwhisk\",\n            \"name\": \"dockerskeleton\",\n            \"tag\": \"1.14.0\"\n        }\n    ]\n}\n"
+
+        # scheduler settings
+
 
         # Action limits
         - name: "LIMITS_ACTIONS_INVOKES_PERMINUTE"
@@ -140,8 +170,10 @@ spec:
 
         # Kafka properties
         - name: "KAFKA_HOSTS"
-          value: "RELEASE-NAME-kafka-0.RELEASE-NAME-kafka.nuvolaris.svc.cluster.local:9092"
+          value: "openwhisk-kafka-0.openwhisk-kafka.nuvolaris.svc.cluster.local:9092"
         - name: "CONFIG_whisk_kafka_replicationFactor"
+          value: ""
+        - name: "CONFIG_whisk_kafka_topics_prefix"
           value: ""
         - name: "CONFIG_whisk_kafka_topics_cacheInvalidation_retentionBytes"
           value: ""
@@ -167,59 +199,78 @@ spec:
           value: ""
         - name: "CONFIG_whisk_kafka_topics_health_segmentBytes"
           value: ""
+        
         - name: "CONFIG_whisk_kafka_topics_invoker_retentionBytes"
           value: ""
         - name: "CONFIG_whisk_kafka_topics_invoker_retentionMs"
           value: ""
         - name: "CONFIG_whisk_kafka_topics_invoker_segmentBytes"
           value: ""
+        
+        - name: "CONFIG_whisk_kafka_topics_scheduler_retentionBytes"
+          value: ""
+        - name: "CONFIG_whisk_kafka_topics_scheduler_retentionMs"
+          value: ""
+        - name: "CONFIG_whisk_kafka_topics_scheduler_segmentBytes"
+          value: ""
+        
+        - name: "CONFIG_whisk_kafka_topics_creationAck_retentionBytes"
+          value: ""
+        - name: "CONFIG_whisk_kafka_topics_creationAck_retentionMs"
+          value: ""
+        - name: "CONFIG_whisk_kafka_topics_creationAck_segmentBytes"
+          value: ""
+
+        # etcd properties
 
         # properties for DB connection
         - name: "CONFIG_whisk_couchdb_username"
           valueFrom:
             secretKeyRef:
-              name: RELEASE-NAME-db.auth
+              name: openwhisk-db.auth
               key: db_username
         - name: "CONFIG_whisk_couchdb_password"
           valueFrom:
             secretKeyRef:
-              name: RELEASE-NAME-db.auth
+              name: openwhisk-db.auth
               key: db_password
         - name: "CONFIG_whisk_couchdb_port"
           valueFrom:
             configMapKeyRef:
-              name: RELEASE-NAME-db.config
+              name: openwhisk-db.config
               key: db_port
         - name: "CONFIG_whisk_couchdb_protocol"
           valueFrom:
             configMapKeyRef:
-              name: RELEASE-NAME-db.config
+              name: openwhisk-db.config
               key: db_protocol
         - name: "CONFIG_whisk_couchdb_host"
-          value: "RELEASE-NAME-couchdb.nuvolaris.svc.cluster.local"
+          value: "openwhisk-couchdb.nuvolaris.svc.cluster.local"
         - name: "CONFIG_whisk_couchdb_provider"
           valueFrom:
             configMapKeyRef:
-              name: RELEASE-NAME-db.config
+              name: openwhisk-db.config
               key: db_provider
         - name: "CONFIG_whisk_couchdb_databases_WhiskActivation"
           valueFrom:
             configMapKeyRef:
-              name: RELEASE-NAME-db.config
+              name: openwhisk-db.config
               key: db_whisk_activations
         - name: "CONFIG_whisk_couchdb_databases_WhiskEntity"
           valueFrom:
             configMapKeyRef:
-              name: RELEASE-NAME-db.config
+              name: openwhisk-db.config
               key: db_whisk_actions
         - name: "CONFIG_whisk_couchdb_databases_WhiskAuth"
           valueFrom:
             configMapKeyRef:
-              name: RELEASE-NAME-db.config
+              name: openwhisk-db.config
               key: db_whisk_auths
 
         - name: "CONTROLLER_INSTANCES"
           value: "1"
+        - name: "CONFIG_akka_cluster_seedNodes_0"
+          value: "akka://controller-actor-system@$(POD_IP):25520"
 
 
 

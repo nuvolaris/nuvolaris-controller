@@ -9,9 +9,61 @@ tasks:
     - kubectl apply -f init
     - kubectl config set-context --current --namespace nuvolaris
     
-  couchdb: 
+  couchdb:
      - kubectl {{.CMD}} -f couchdb
+
+  couchdb:delete: task couchdb CMD=delete
 
   redpanda: 
      - kubectl {{.CMD}} -f redpanda
 
+  kafka:
+    - kubectl -n nuvolaris apply -f kafka/strimzi-operator.yaml
+    - kubectl -n nuvolaris wait po -l name=strimzi-cluster-operator --for=condition=Ready --timeout=300s
+    - kubectl -n nuvolaris apply -f kafka/cluster-single.yaml
+    - kubectl -n nuvolaris wait kafka/nuv --for=condition=Ready --timeout=300s 
+
+  kafka:delete:
+    - kubectl -n nuvolaris delete -f kafka/cluster-single.yaml
+    - kubectl -n nuvolaris delete -f kafka/strimzi-operator.yaml
+
+  kafka:test:
+    - kubectl -n nuvolaris apply -f kafka/kcat.yaml
+    - kubectl -n nuvolaris wait po kcat --for=condition=Ready 
+    - kubectl -n nuvolaris exec -ti kcat -- /bin/sh -c 'echo test | kcat -P -b $NUV_KAFKA_BOOTSTRAP_SERVICE_HOST:$NUV_KAFKA_BOOTSTRAP_SERVICE_PORT_TCP_CLIENTS -t test'
+    - kubectl -n nuvolaris exec -ti kcat -- /bin/sh -c 'kcat -C -b $NUV_KAFKA_BOOTSTRAP_SERVICE_HOST:$NUV_KAFKA_BOOTSTRAP_SERVICE_PORT_TCP_CLIENTS -t test -e'
+    - kubectl -n nuvolaris delete -f kafka/kcat.yaml --grace-period=0
+
+  couchdb:test:
+    - kubectl -n nuvolaris apply -f kafka/kcat.yaml
+    - kubectl -n nuvolaris wait po kcat --for=condition=Ready 
+    - >
+      kubectl -n nuvolaris exec -i kcat -- /bin/sh -c
+      'wget -qO- http://whisk_admin:some_passw0rd@$COUCHDB_SERVICE_HOST:$COUCHDB_SERVICE_PORT/_all_dbs/'
+    - kubectl -n nuvolaris delete -f kafka/kcat.yaml --grace-period=0
+
+
+# kafkacat -L -b localhost:9092
+# echo test | kafkacat -P -b localhost:9092 -t test
+# kafkacat -C -b localhost:9092 -t test
+
+  watch: watch kubectl -n nuvolaris get deploy,pod,service,job 
+    
+  clean:
+    cmds:
+    - task redpanda CMD=delete
+    - task couchdb CMD=delete
+    - task init CMD=delete
+
+  export:
+    cmds:
+    - | 
+      if test -z "{{.F}}"
+      then ls "{{.TPL}}/templates" ; echo select with "F=<file>" no .yaml
+      else helm template openwhisk {{.TPL}} \
+      -n nuvolaris -f openwhisk-deploy-kube/deploy/kind/mycluster.yaml \
+      -s  templates/{{.F}}.yaml | tee ../demo-enterprise/export/{{.F}}.yaml
+      fi
+    vars:
+      TPL: openwhisk-deploy-kube/helm/openwhisk
+    dir: ../openwhisk-kube
