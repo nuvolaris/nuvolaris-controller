@@ -24,5 +24,7 @@ metadata:
   namespace: nuvolaris
 type: Opaque
 data:
+  # whisk_admin
   db_username: d2hpc2tfYWRtaW4=
+  # some_passw0rd
   db_password: c29tZV9wYXNzdzByZA==

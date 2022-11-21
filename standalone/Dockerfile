@@ -39,7 +39,7 @@ RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/d
     apt-get update && apt-get -y install docker-ce-cli
 WORKDIR /home
 ENV HOME=/home
-RUN  mkdir -p /home/etc/ /home/lib/ /home/bin/
+RUN mkdir -p /home/etc/ /home/lib/ /home/bin/
 ADD lib/* /home/lib/
 ADD bin/* /home/bin/
 ADD etc/* /home/etc/
