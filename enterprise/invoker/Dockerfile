@@ -15,14 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 LABEL maintainer="Michele Sciabarra michele@nuvolaris.io"
 # configure dpkg && timezone
 ENV TZ=Europe/London
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections ;\
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime ;\
     echo $TZ > /etc/timezone ;\
-    useradd -m -d /home nuvolaris
+    useradd -d /home nuvolaris
 # add docker and java (amazon corretto) repos
 RUN apt-get update && apt-get -y upgrade &&\
     apt-get -y install \
@@ -32,7 +32,7 @@ RUN apt-get update && apt-get -y upgrade &&\
     unzip vim telnet
 # install java (amazon corretto)
 RUN wget -O- https://apt.corretto.aws/corretto.key | apt-key add - ;\
-    add-apt-repository 'deb https://apt.corretto.aws stable main' ;\
+    add-apt-repository -y 'deb https://apt.corretto.aws stable main' ;\
     apt-get update && apt-get -y install java-11-amazon-corretto-jdk
 RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu bionic stable" > /etc/apt/sources.list.d/docker.list ;\
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor > /usr/share/keyrings/docker-archive-keyring.gpg ;\
