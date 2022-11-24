@@ -19,7 +19,7 @@ version: '3'
 vars:
   MILESTONE: morpheus
   REPO: ghcr.io
-  USER: msciabarra
+  USER: nuvolaris
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null || echo {{.MILESTONE}}-latest
   CONTROLLER_IMAGE: "{{.REPO}}/{{.USER}}/openwhisk-controller"
@@ -88,11 +88,11 @@ tasks:
     - rm -rvf invoker/bin invoker/lib
 
   buildx-and-push:
-    dir: standalone
     deps:
      - compile
     cmds:
-     - docker buildx build --platform linux/amd64,linux/arm64 -t {{.CONTROLLER}} . --push
+      - docker buildx build --platform linux/amd64,linux/arm64 -t {{.CONTROLLER_IMAGE}}:{{.TAG}} controller  --push
+      - docker buildx build --platform linux/amd64,linux/arm64 -t {{.INVOKER_IMAGE}}:{{.TAG}} invoker  --push
 
   run:
     deps:

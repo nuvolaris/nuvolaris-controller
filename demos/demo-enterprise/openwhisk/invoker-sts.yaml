@@ -6,10 +6,7 @@ metadata:
   name: openwhisk-invoker
   labels:
     name: openwhisk-invoker
-    heritage: "Helm"
-    release: "openwhisk"
-    chart: "openwhisk-1.0.1"
-    app: openwhisk-openwhisk
+    app: openwhisk-invoker
 spec:
   podManagementPolicy: "Parallel"
   serviceName: openwhisk-invoker
@@ -21,26 +18,22 @@ spec:
     metadata:
       labels:
         name: openwhisk-invoker
-        heritage: "Helm"
-        release: "openwhisk"
-        chart: "openwhisk-1.0.1"
-        app: openwhisk-openwhisk
+        app: openwhisk-invoker
 
     spec:
       serviceAccountName: openwhisk-invoker
       restartPolicy: Always
 
 
-
-      initContainers:
-      # Wait for a controller to be up (which implies kafka, zookeeper, couchdb, etcd are all up as well).
-      - name: "wait-for-controller"
-        image: "busybox:latest"
-        imagePullPolicy: "IfNotPresent"
-        env:
-        - name: "READINESS_URL"
-          value: http://openwhisk-controller.nuvolaris.svc.cluster.local:8080/ping
-        command: ["sh", "-c", "result=1; until [ $result -eq 0 ]; do echo 'Checking controller readiness'; wget -T 5 --spider $READINESS_URL; result=$?; sleep 1; done; echo 'Success: controller is ready'"]
+      #initContainers:
+      ## Wait for a controller to be up (which implies kafka, zookeeper, couchdb, etcd are all up as well).
+      #- name: "wait-for-controller"
+      #  image: "busybox:latest"
+      #  imagePullPolicy: "IfNotPresent"
+      #  env:
+      #  - name: "READINESS_URL"
+      #    value: http://openwhisk-controller:8080/ping
+      #  command: ["sh", "-c", "result=1; until [ $result -eq 0 ]; do echo 'Checking controller readiness'; wget -T 5 --spider $READINESS_URL; result=$?; sleep 1; done; echo 'Success: controller is ready'"]
       
       containers:
       - name: invoker
@@ -48,25 +41,23 @@ spec:
         imagePullPolicy: "IfNotPresent"
         command: [ "/bin/bash", "-c", "/init.sh --uniqueName $INVOKER_NAME" ]
         env:
+
+          - name:  "CONFIG_whisk_info_date"
+            value:  "01-01-2023"
+
+          - name: "CONFIG_whisk_info_buildNo"
+            value: "development-unknown"
+
           - name: "PORT"
             value: "8080"
 
-          # Needed by invoker to set the environment variable __OW_API_HOST in action containers
+
           - name: "WHISK_API_HOST_PROTO"
-            valueFrom:
-              configMapKeyRef:
-                name: openwhisk-whisk.config
-                key: whisk_internal_api_host_proto
+            value: "http"
           - name: "WHISK_API_HOST_PORT"
-            valueFrom:
-              configMapKeyRef:
-                name: openwhisk-whisk.config
-                key: whisk_internal_api_host_port
+            value: "3233"
           - name: "WHISK_API_HOST_NAME"
-            valueFrom:
-              configMapKeyRef:
-                name: openwhisk-whisk.config
-                key: whisk_internal_api_host_name
+            value: "localhost"
 
           # Needed by invoker to configure the container factory & container pool
           - name: "CONFIG_whisk_docker_containerFactory_useRunc"
@@ -141,59 +132,41 @@ spec:
             value: ""
 
           # this version is the day it is deployed,
-          - name:  "CONFIG_whisk_info_date"
-            valueFrom:
-              configMapKeyRef:
-                name: openwhisk-whisk.config
-                key: whisk_info_date
+          #- name:  "CONFIG_whisk_info_date"
+          #  valueFrom:
+          #    configMapKeyRef:
+          #      name: openwhisk-whisk.config
+          #      key: whisk_info_date
 
           # properties for DB connection
           - name: "CONFIG_whisk_couchdb_username"
             valueFrom:
               secretKeyRef:
-                name: openwhisk-db.auth
+                name: couchdb-auth
                 key: db_username
           - name: "CONFIG_whisk_couchdb_password"
             valueFrom:
               secretKeyRef:
-                name: openwhisk-db.auth
+                name: couchdb-auth
                 key: db_password
           - name: "CONFIG_whisk_couchdb_port"
-            valueFrom:
-              configMapKeyRef:
-                name: openwhisk-db.config
-                key: db_port
+            value: "5984"
           - name: "CONFIG_whisk_couchdb_protocol"
-            valueFrom:
-              configMapKeyRef:
-                name: openwhisk-db.config
-                key: db_protocol
+            value: "http"
           - name: "CONFIG_whisk_couchdb_host"
-            value: "openwhisk-couchdb.nuvolaris.svc.cluster.local"
+            value: "couchdb"
           - name: "CONFIG_whisk_couchdb_provider"
-            valueFrom:
-              configMapKeyRef:
-                name: openwhisk-db.config
-                key: db_provider
+            value: "CouchDB"
           - name: "CONFIG_whisk_couchdb_databases_WhiskActivation"
-            valueFrom:
-              configMapKeyRef:
-                name: openwhisk-db.config
-                key: db_whisk_activations
+            value: "nuvolaris_activations"
           - name: "CONFIG_whisk_couchdb_databases_WhiskEntity"
-            valueFrom:
-              configMapKeyRef:
-                name: openwhisk-db.config
-                key: db_whisk_actions
+            value: "nuvolaris_whisks"
           - name: "CONFIG_whisk_couchdb_databases_WhiskAuth"
-            valueFrom:
-              configMapKeyRef:
-                name: openwhisk-db.config
-                key: db_whisk_auths
-
+            value: "nuvolaris_subjects"
           # properties for kafka connection
           - name: "KAFKA_HOSTS"
-            value: "openwhisk-kafka-0.openwhisk-kafka.nuvolaris.svc.cluster.local:9092"
+            value: "nuv-kafka-bootstrap:9092"
+
           - name: "CONFIG_whisk_kafka_replicationFactor"
             value: ""
           - name: "CONFIG_whisk_kafka_topics_prefix"
@@ -244,19 +217,13 @@ spec:
           - name: "CONFIG_whisk_kafka_topics_creationAck_segmentBytes"
             value: ""
 
-          # etcd properties
-
           # properties for zookeeper connection
           - name: "ZOOKEEPER_HOSTS"
-            value: "openwhisk-zookeeper-0.openwhisk-zookeeper.nuvolaris.svc.cluster.local:2181"
-
-
-
+            value: "nuv-zookeeper-client:2181"
 
           - name: "CONFIG_logback_log_level"
             value: "INFO"
-          - name: "CONFIG_whisk_helm_release"
-            value: "openwhisk"
+
           - name: "CONFIG_akka_coordinatedShutdown_phases_actorSystemTerminate_timeout"
             value: "30 s"
           - name: "CONFIG_whisk_runtime_delete_timeout"
@@ -264,21 +231,3 @@ spec:
         ports:
         - name: invoker
           containerPort: 8080
----
-# Source: openwhisk/templates/invoker-pod.yaml
-#
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#

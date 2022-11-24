@@ -15,14 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 LABEL maintainer="Michele Sciabarra michele@nuvolaris.io"
 # configure dpkg && timezone
 ENV TZ=Europe/London
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections ;\
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime ;\
     echo $TZ > /etc/timezonen;\
-    useradd -m -d /home nuvolaris
+    useradd -d /home nuvolaris
 # add docker and java (amazon corretto) repos
 RUN apt-get update && apt-get -y upgrade &&\
     apt-get -y install \

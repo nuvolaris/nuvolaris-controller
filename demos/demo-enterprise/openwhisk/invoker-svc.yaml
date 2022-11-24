@@ -1,0 +1,12 @@
+kind: Service
+metadata:
+  name: openwhisk-invoker-svc
+  labels:
+    name: openwhisk-invoker-svc
+    app: openwhisk-invoker
+spec:
+  selector:
+    name: openwhisk-invoker
+  ports:
+    - port: 8080
+      name: http
