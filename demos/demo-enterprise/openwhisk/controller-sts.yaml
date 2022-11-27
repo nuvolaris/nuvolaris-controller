@@ -60,7 +60,7 @@ spec:
       containers:
       - name: controller
         imagePullPolicy: "IfNotPresent"
-        image: "openwhisk/controller:ef725a6"
+        image: "whisk/controller:latest"
         command: ["/bin/bash", "-c", "/init.sh `hostname | awk -F '-' '{print $NF}'`"]
         ports:
         - name: controller
@@ -186,6 +186,7 @@ spec:
             secretKeyRef:
               name: couchdb-auth
               key: db_password
+
         - name: "CONFIG_whisk_couchdb_port"
           value: "5984"
         - name: "CONFIG_whisk_couchdb_protocol"

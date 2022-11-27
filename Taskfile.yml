@@ -34,3 +34,25 @@ tasks:
     cmds:
       - task buildx-and-push
 
+  build-and-load:
+    dir: openwhisk
+    cmds:
+      - ./gradlew distDocker
+      - kind load docker-image whisk/controller:latest --name=nuvolaris
+      - kind load docker-image whisk/invoker:latest --name=nuvolaris
+
+  devow-build:
+    - docker build .devcontainer -t ghcr.io/nuvolaris/devow:{{.TAG}}
+    - docker push ghcr.io/nuvolaris/devow:{{.TAG}}
+
+  devow-in:
+    - >
+       docker run -d --name devow --rm --network=host
+       --mount source=/var/run/docker.sock,target=/var/run/docker-host.sock,type=bind
+       -v $PWD/openwhisk:/home/nuvolaris/openwhisk
+       ghcr.io/nuvolaris/devow:{{.TAG}}
+    - docker exec -ti -u nuvolaris devow bash
+    - docker kill devow
+
+
+

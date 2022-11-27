@@ -37,9 +37,10 @@ spec:
       
       containers:
       - name: invoker
-        image: "openwhisk/invoker:ef725a6"
+        image: "whisk/invoker:latest"
         imagePullPolicy: "IfNotPresent"
         command: [ "/bin/bash", "-c", "/init.sh --uniqueName $INVOKER_NAME" ]
+        #command: ["sleep", "inf"]
         env:
 
           - name:  "CONFIG_whisk_info_date"
@@ -50,7 +51,6 @@ spec:
 
           - name: "PORT"
             value: "8080"
-
 
           - name: "WHISK_API_HOST_PROTO"
             value: "http"

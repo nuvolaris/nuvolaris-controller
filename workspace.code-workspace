@@ -19,9 +19,6 @@
 	"folders": [
 		{
 			"path": "openwhisk"
-		},
-		{
-			"path": "."
 		}
 	],
 	"settings": {

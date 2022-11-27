@@ -4,7 +4,7 @@ metadata:
   name: nuv
 spec:
   kafka:
-    version: 2.3.1
+    version: 3.3.1
     replicas: 1
     listeners:
       - name: plain
