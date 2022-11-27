@@ -49,6 +49,26 @@ tasks:
     status:
       - test -d ../enterprise/controller/lib
 
+  compile:
+    - task: compile:invoker
+    - task: compile:controller
+
+  build:invoker:
+    deps:
+      - compile:invoker
+    cmds:
+      - docker build -t {{.INVOKER_IMAGE}}:{{.TAG}} invoker
+
+  build:controller:
+    deps:
+      - compile:controller
+    cmds:
+      - docker build -t {{.CONTROLLER_IMAGE}}:{{.TAG}} controller
+
+  build:
+    - task: build:invoker
+    - task: build:controller
+
   compile:admin:
     dir: ../openwhisk
     deps:
@@ -58,18 +78,6 @@ tasks:
       - cp bin/wskadmin-next ../controller/bin/
     status:
       - test -f ../controller/bin/wskadmin-next
-
-  compile:
-    deps:
-      - compile:invoker
-      - compile:controller
-
-  build:
-    deps:
-      - compile
-    cmds:
-      - docker build -t {{.CONTROLLER_IMAGE}}:{{.TAG}} controller
-      - docker build -t {{.INVOKER_IMAGE}}:{{.TAG}} invoker
 
   build-and-load:
     deps:
