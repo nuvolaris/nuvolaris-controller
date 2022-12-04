@@ -19,6 +19,9 @@
 	"folders": [
 		{
 			"path": "openwhisk"
+		},
+		{
+			"path": ".devcontainer"
 		}
 	],
 	"settings": {

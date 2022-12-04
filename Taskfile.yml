@@ -47,10 +47,10 @@ tasks:
 
   devow-in:
     - >
-       docker run -d --name devow --rm --network=host
-       --mount source=/var/run/docker.sock,target=/var/run/docker-host.sock,type=bind
-       -v $PWD/openwhisk:/home/nuvolaris/openwhisk
-       ghcr.io/nuvolaris/devow:{{.TAG}}
+        docker run -d --name devow --rm --network=host
+        --mount source=/var/run/docker.sock,target=/var/run/docker-host.sock,type=bind
+        -v $PWD/openwhisk:/home/nuvolaris/openwhisk
+        ghcr.io/nuvolaris/devow:{{.TAG}}
     - docker exec -ti -u nuvolaris devow bash
     - docker kill devow
 
