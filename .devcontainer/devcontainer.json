@@ -16,16 +16,13 @@
 // under the License.
 {
 	"name": "nuvolaris",
-	"image": "ghcr.io/nuvolaris/devow:0.3.0-morpheus.22112710",
+	"image": "ghcr.io/nuvolaris/devow:0.3.0-morpheus.22112917",
 	//"build": { "dockerfile": "Dockerfile" },
 	"mounts": [
 		"source=/var/run/docker.sock,target=/var/run/docker-host.sock,type=bind"
 	],
 	"remoteUser": "nuvolaris",
 	"overrideCommand": false,
-	"runArgs": [
-		"--network=host"
-	],
 	"extensions": [
 		"stuart.unique-window-colors",
 		"oderwat.indent-rainbow",
@@ -33,5 +30,9 @@
 		"mhutchie.git-graph",
 		"scalameta.metals", 
 		"vscjava.vscode-java-test"
+	],
+	"runArgs": [
+			"--network", "host",
+			"--add-host", "host.docker.internal:localhost"
 	]
 }
