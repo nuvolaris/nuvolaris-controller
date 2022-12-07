@@ -1,0 +1,54 @@
+# 1. copy .env of the operator in this folder 
+# 2.  generate the image-tag with task image-tag
+# 3. build the image: task build
+# 4. debug the image: task debug
+# 5. task build-and-push
+# 6. edit .devcontainer to add the current tag
+# 7. from vscode, rebuild in container
+
+
+version: '3'
+
+vars: 
+  BASETAG: 0.3.0-morpheus
+  TAG:
+    sh: cat .image-tag || echo unknown
+
+dotenv: 
+  - .env
+
+tasks:
+
+  setup: ./setup.sh
+
+  image-tag: echo {{.BASETAG}}.$(date +%y%m%d%H)  >.image-tag
+
+  docker-login: >
+      echo $GITHUB_TOKEN | docker login ghcr.io -u $GITHUB_USER --password-stdin
+  
+  build:
+    - docker build . -t ghcr.io/nuvolaris/devow:{{.TAG}}
+
+  start: >
+        docker run -d --name devow --rm
+        -v $(dirname $PWD):/workspaces/openwhisk
+        --mount source=/var/run/docker.sock,target=/var/run/docker-host.sock,type=bind
+        --network=host
+        --add-host=host.docker.internal:host-gateway
+        --env=REAL_HOME=$HOME
+        ghcr.io/nuvolaris/devow:{{.TAG}}
+  
+  enter: 
+        docker exec -ti --user nuvolaris devow bash
+      
+  stop: docker kill devow
+
+  debug:
+    - task: start
+    - task: enter
+    - task: stop
+
+
+  build-and-push:
+    - task: build
+    - docker push ghcr.io/nuvolaris/devow:{{.TAG}}
