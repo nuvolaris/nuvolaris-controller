@@ -1,0 +1,34 @@
+From b339147f88841bc2f70c22bcfb2bd56d188bec58 Mon Sep 17 00:00:00 2001
+From: Michele Sciabarra <michele@sciabarra.com>
+Date: Wed, 7 Dec 2022 09:17:24 +0000
+Subject: [PATCH 2/2] ignore results
+
+---
+ .gitignore                                                     | 1 +
+ .../org/apache/openwhisk/standalone/DockerVersionTests.scala   | 3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/.gitignore b/.gitignore
+index 025579b2..9639233c 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -105,3 +105,4 @@ core/routemgmt/getApi/utils.js
+ .image-tag
+ .env
+ tmp/
++results/
+diff --git a/core/standalone/src/test/scala/org/apache/openwhisk/standalone/DockerVersionTests.scala b/core/standalone/src/test/scala/org/apache/openwhisk/standalone/DockerVersionTests.scala
+index 95d3a1db..9c1dc7d8 100644
+--- a/core/standalone/src/test/scala/org/apache/openwhisk/standalone/DockerVersionTests.scala
++++ b/core/standalone/src/test/scala/org/apache/openwhisk/standalone/DockerVersionTests.scala
+@@ -41,4 +41,5 @@ class DockerVersionTests extends FlatSpec with Matchers {
+     DockerVersion("17.09") should be < DockerVersion("18.03.2")
+   }
+ }
+-*/
+\ No newline at end of file
++*/
++
+-- 
+2.34.1
+
