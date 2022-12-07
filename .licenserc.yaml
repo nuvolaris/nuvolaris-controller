@@ -36,6 +36,7 @@ header:
     - '**/go.sum'
     - '**/auth.guest'
     - '**/auth.whisk.system'
+    - '**/results/**'
  
 dependency:
   files:

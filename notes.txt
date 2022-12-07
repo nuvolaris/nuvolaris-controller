@@ -1,0 +1,45 @@
+
+Test Set:
+
+REQUIRE_ONLY_DB
+REQUIRE_SYSTEM
+REQUIRE_MULTI_RUNTIME
+LEAN
+REQUIRE_SYSTEM_BASIC
+REQUIRE_LEAN_SYSTEM
+REQUIRE_STANDALONE
+
+To run a set set
+
+export TESTCONTAINERS_RYUK_DISABLED="true"
+export ORG_GRADLE_PROJECT_testSetName="REQUIRE_ONLY_DB"
+./gradlew :tests:testCoverageLean
+
+You can run tests with
+
+./gradlew tests:testUnit
+
+Logs are in tests/build/...
+
+see them with python3 -m http.server
+
+to run a single test:
+- start Metals
+- select the test you want to run
+
+./gradlew :tests:test --tests ElasticSearchActivationStoreTests
+
+collect changes
+
+.gitignore
+.vscode/launch.json
+core/standalone/build.gradle
+core/standalone/src/main/scala/org/apache/openwhisk/standalone/StandaloneDockerSupport.scala
+core/standalone/src/main/scala/org/apache/openwhisk/standalone/StandaloneOpenWhisk.scala
+core/standalone/src/test/scala/org/apache/openwhisk/standalone/DockerVersionTests.scala
+tests/src/test/scala/common/WhiskProperties.java
+
+src/test/scala/org/apache/openwhisk/core/database/cosmosdb/CosmosDBArtifactStoreT
+ests.scala
+tests/src/test/scala/org/apache/openwhisk/core/database/cosmosdb/CosmosDBLeakTes
+ts.scala

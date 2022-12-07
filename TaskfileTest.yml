@@ -1,0 +1,57 @@
+version: '3'
+
+env:
+    TESTCONTAINERS_RYUK_DISABLED: true
+
+tasks:
+
+  setup: echo ok
+
+  reset: docker ps -qa | xargs docker rm -f
+
+  prepare:
+    cmds: 
+      # todo: what is that runtimes nodeonly
+      - mkdir -p results
+      - docker pull alpine:3.5
+      - task: setup-prereq 
+      - task: setup-system
+
+  dist:
+    cmds: 
+      - ./distDocker.sh
+    dir: openwhisk/tools/travis
+
+  setup-prereq:
+    cmds: 
+      - ./setupPrereq.sh /ansible/files/runtimes-nodeonly.json
+    dir: openwhisk/tools/travis
+
+  setup-system:
+    cmds: 
+      - ./setupSystem.sh /ansible/files/runtimes-nodeonly.json
+    dir: openwhisk/tools/travis
+
+  dock
+  unit:
+    cmds:
+      - ./runTests.sh
+      - mv tests/build/reports/tests/testCoverageLean results/unit
+    dir: openwhisk/tools/travis
+    env:
+      ORG_GRADLE_PROJECT_testSetName: REQUIRE_ONLY_DB
+
+  system:
+    cmds:
+      - ./runTests.sh
+    dir: tools/travis
+    env:
+      ORG_GRADLE_PROJECT_testSetName: REQUIRE_SYSTEM
+
+  show:
+    cmds:
+      - python3 -m http.server
+    dir: results
+
+  
+
