@@ -3,7 +3,19 @@ version: '3'
 env:
     TESTCONTAINERS_RYUK_DISABLED: true
 
+dotenv: 
+  - .env
+
 tasks:
+
+  default: 
+    cmds: 
+     - |-
+       if test -z "{{.CLI_ARGS}}"
+       then ls *.yml
+       else ansible-playbook -i environments/local -e docker_image_prefix=testing {{.CLI_ARGS}}
+       fi
+    dir: openwhisk/ansible
 
   setup: echo ok
 
@@ -12,39 +24,42 @@ tasks:
   prepare:
     cmds: 
       # todo: what is that runtimes nodeonly
-      - mkdir -p results
       - docker pull alpine:3.5
-      - task: setup-prereq 
-      - task: setup-system
-
-  dist:
-    cmds: 
       - ./distDocker.sh
     dir: openwhisk/tools/travis
 
-  setup-prereq:
-    cmds: 
-      - ./setupPrereq.sh /ansible/files/runtimes-nodeonly.json
+  unit-setup: 
+    cmds:
+      - ./setupPrereq.sh
     dir: openwhisk/tools/travis
-
-  setup-system:
-    cmds: 
-      - ./setupSystem.sh /ansible/files/runtimes-nodeonly.json
-    dir: openwhisk/tools/travis
-
-  dock
-  unit:
+  
+  unit-test:
     cmds:
       - ./runTests.sh
-      - mv tests/build/reports/tests/testCoverageLean results/unit
     dir: openwhisk/tools/travis
     env:
       ORG_GRADLE_PROJECT_testSetName: REQUIRE_ONLY_DB
 
+  unit-logs:
+    cmds:
+      - ./tools/github/checkAndUploadLogs.sh unit db
+    dir: openwhisk
+    env:
+      GH_BUILD_ID:
+          sh: date +%s
+      GH_BRANCH:
+        sh:  git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
+
+  logs-upload:
+    cmds:
+      - ./tools/github/s3-upload.sh "$PWD/logs" test-upload.tar.gz
+    dir: openwhisk
+
   system:
     cmds:
+      - ./setupSystem.sh /ansible/files/runtimes-nodeonly.json
       - ./runTests.sh
-    dir: tools/travis
+    dir: openwhisk/tools/travis
     env:
       ORG_GRADLE_PROJECT_testSetName: REQUIRE_SYSTEM
 
@@ -52,6 +67,4 @@ tasks:
     cmds:
       - python3 -m http.server
     dir: results
-
-  
 

@@ -15,7 +15,7 @@ export TESTCONTAINERS_RYUK_DISABLED="true"
 export ORG_GRADLE_PROJECT_testSetName="REQUIRE_ONLY_DB"
 ./gradlew :tests:testCoverageLean
 
-You can run tests with
+You can run tests with: 
 
 ./gradlew tests:testUnit
 
@@ -27,18 +27,35 @@ to run a single test:
 - start Metals
 - select the test you want to run
 
+*** retry test
+
 ./gradlew :tests:test --tests ElasticSearchActivationStoreTests
 
-collect changes
+** trace tests
+export ROOTDIR=/home/runner/work/openwhisk/openwhisk
+cd $ROOTDIR/ansible
+export ANSIBLE_CMD="ansible-playbook -i environments/local -e docker_image_prefix=testing"
 
-.gitignore
-.vscode/launch.json
-core/standalone/build.gradle
+** enable/disable debug
+
+grep NGROK_DEBUG .github/workflows/*.yaml
+replace NGROK_DEBUG '#NGROK_DEBUG' .github/workflows/*.yaml
+
+replace '#NGROK_DEBUG' 'NGROK_DEBUG' .github/workflows/*.yaml
+
+*** Collect changes to standalone
+
 core/standalone/src/main/scala/org/apache/openwhisk/standalone/StandaloneDockerSupport.scala
 core/standalone/src/main/scala/org/apache/openwhisk/standalone/StandaloneOpenWhisk.scala
 core/standalone/src/test/scala/org/apache/openwhisk/standalone/DockerVersionTests.scala
 tests/src/test/scala/common/WhiskProperties.java
 
+** Others
+.gitignore
+.vscode/launch.json
+core/standalone/build.gradle
+
+** moved away
 src/test/scala/org/apache/openwhisk/core/database/cosmosdb/CosmosDBArtifactStoreT
 ests.scala
 tests/src/test/scala/org/apache/openwhisk/core/database/cosmosdb/CosmosDBLeakTes

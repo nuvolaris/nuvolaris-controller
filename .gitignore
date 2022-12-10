@@ -30,7 +30,6 @@ enterprise/controller/bin/
 enterprise/invoker/lib/
 enterprise/invoker/bin/
 standalone/lib/
-env.sample
 export/
-env.sample
 results/
+.env
