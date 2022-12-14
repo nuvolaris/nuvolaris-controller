@@ -2,11 +2,18 @@ version: '3'
 
 env:
     TESTCONTAINERS_RYUK_DISABLED: true
+    BRANCH: 
+      sh: git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
 
 dotenv: 
   - .env
 
 tasks:
+
+  tag:
+    - git tag -d $(git tag) 
+    - git tag -f {{.BRANCH}}.$(date +%y%m%d%H)
+    - git tag
 
   default: 
     cmds: 

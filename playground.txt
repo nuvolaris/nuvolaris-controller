@@ -37,11 +37,16 @@ cd $ROOTDIR/ansible
 export ANSIBLE_CMD="ansible-playbook -i environments/local -e docker_image_prefix=testing"
 
 ** enable/disable debug
-
 grep NGROK_DEBUG .github/workflows/*.yaml
 replace NGROK_DEBUG '#NGROK_DEBUG' .github/workflows/*.yaml
-
 replace '#NGROK_DEBUG' 'NGROK_DEBUG' .github/workflows/*.yaml
+
+***
+grep JAVA .github/workflows/*.yaml
+replace 'JAVA_DISTRO: adopt-openj9' 'JAVA_DISTRO: corretto' .github/workflows/*.yaml
+
+
+
 
 *** Collect changes to standalone
 
@@ -60,3 +65,9 @@ src/test/scala/org/apache/openwhisk/core/database/cosmosdb/CosmosDBArtifactStore
 ests.scala
 tests/src/test/scala/org/apache/openwhisk/core/database/cosmosdb/CosmosDBLeakTes
 ts.scala
+
+** remove bucket
+aws s3 rb s3://S3_LOG_BUCKET --force
+
+** copy
+pwd # nuvolaris-controller
