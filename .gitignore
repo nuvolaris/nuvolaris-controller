@@ -32,4 +32,6 @@ enterprise/invoker/bin/
 standalone/lib/
 export/
 results/
+*.tar
+openwhisk-master/
 .env

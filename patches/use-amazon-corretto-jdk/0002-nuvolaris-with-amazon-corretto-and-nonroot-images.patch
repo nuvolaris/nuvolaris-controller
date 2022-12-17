@@ -1,0 +1,235 @@
+From 8e73907ca24d66c441ebf87af0576478a1db2e43 Mon Sep 17 00:00:00 2001
+From: Michele Sciabarra <michele@sciabarra.com>
+Date: Fri, 9 Dec 2022 10:27:01 +0000
+Subject: [PATCH 2/3] nuvolaris with amazon corretto and nonroot images
+
+---
+ ansible/roles/controller/tasks/deploy.yml     |  3 ++-
+ ansible/roles/invoker/tasks/deploy.yml        |  2 +-
+ common/scala/Dockerfile                       | 18 ++++++++++-----
+ core/controller/Dockerfile                    | 21 +++++++-----------
+ core/controller/init.sh                       |  4 ++--
+ core/cosmosdb/cache-invalidator/Dockerfile    |  2 +-
+ core/invoker/Dockerfile                       | 22 +++++++++----------
+ core/invoker/Dockerfile.cov                   |  1 +
+ core/invoker/init.sh                          |  4 ++--
+ .../Unicode.cs                                |  2 +-
+ 10 files changed, 41 insertions(+), 38 deletions(-)
+
+diff --git a/ansible/roles/controller/tasks/deploy.yml b/ansible/roles/controller/tasks/deploy.yml
+index 64724c41..71d4291b 100644
+--- a/ansible/roles/controller/tasks/deploy.yml
++++ b/ansible/roles/controller/tasks/deploy.yml
+@@ -344,9 +344,10 @@
+     userns_mode: "{{ userns_mode | default('') }}"
+     pid_mode: "{{ pid_mode | default('') }}"
+     privileged: "{{ privileged | default('no') }}"
++    #command: sleep inf
+     command:
+       /bin/sh -c
+-      "exec /init.sh {{ controller_index }}
++      "exec /home/owuser/init.sh {{ controller_index }}
+       >> /logs/{{ controller_name }}_logs.log 2>&1"
+ 
+ - name: wait until the Controller in this host is up and running
+diff --git a/ansible/roles/invoker/tasks/deploy.yml b/ansible/roles/invoker/tasks/deploy.yml
+index ea4ce481..e040bac3 100644
+--- a/ansible/roles/invoker/tasks/deploy.yml
++++ b/ansible/roles/invoker/tasks/deploy.yml
+@@ -382,7 +382,7 @@
+     env: "{{ env }}"
+     volumes: "{{ volumes }}"
+     ports: "{{ invoker_ports_to_expose }}"
+-    command: /bin/sh -c "exec /init.sh --id {{ invoker_index }} --uniqueName {{ invoker_index }} >> /logs/{{ invoker_name }}_logs.log 2>&1"
++    command: /bin/sh -c "exec /home/owuser/init.sh --id {{ invoker_index }} --uniqueName {{ invoker_index }} >> /logs/{{ invoker_name }}_logs.log 2>&1"
+   when: not lean
+ 
+ - name: wait until Invoker is up and running
+diff --git a/common/scala/Dockerfile b/common/scala/Dockerfile
+index 6db867ff..63cf28f9 100644
+--- a/common/scala/Dockerfile
++++ b/common/scala/Dockerfile
+@@ -14,16 +14,24 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+ #
+-FROM adoptopenjdk/openjdk11-openj9:x86_64-alpine-jdk-11.0.8_10_openj9-0.21.0
++FROM ubuntu:22.04
++RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
++RUN apt-get update && apt-get -y upgrade &&\
++    apt-get -y install software-properties-common apt-utils \
++    curl wget gpg unzip zip vim telnet \
++    silversearcher-ag inetutils-ping locales &&\
++    locale-gen en_US.UTF-8
++RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor > /usr/share/keyrings/docker-archive-keyring.gpg &&\
++    wget -O- https://apt.corretto.aws/corretto.key | apt-key add -
++RUN ARCH=$(dpkg --print-architecture) ;\
++    echo "deb [arch=$ARCH signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu bionic stable" > /etc/apt/sources.list.d/docker.list &&\
++    add-apt-repository 'deb https://apt.corretto.aws stable main'
++RUN apt-get -y install java-11-amazon-corretto-jdk
+ 
+ ENV LANG en_US.UTF-8
+ ENV LANGUAGE en_US:en
+ ENV LC_ALL en_US.UTF-8
+ 
+-# Switch to the HTTPS endpoint for the apk repositories as per https://github.com/gliderlabs/docker-alpine/issues/184
+-RUN sed -i 's/http\:\/\/dl-cdn.alpinelinux.org/https\:\/\/alpine.global.ssl.fastly.net/g' /etc/apk/repositories
+-RUN apk add --update sed curl bash && apk update && apk upgrade
+-
+ RUN mkdir /logs
+ 
+ COPY transformEnvironment.sh /
+diff --git a/core/controller/Dockerfile b/core/controller/Dockerfile
+index 28793532..8b9dead2 100644
+--- a/core/controller/Dockerfile
++++ b/core/controller/Dockerfile
+@@ -30,8 +30,6 @@ ENV SWAGGER_UI_DOWNLOAD_SHA256=3d7ef5ddc59e10f132fe99771498f0f1ba7a2cbfb9585f986
+ # If this cannot be guaranteed, set `invoker_use_runc: false` in the ansible env.
+ ENV DOCKER_VERSION=18.06.3-ce
+ 
+-RUN apk add --update openssl
+-
+ # Uncomment to fetch latest version of docker instead: RUN wget -qO- https://get.docker.com | sh
+ # Install docker client
+ RUN curl -sSL -o docker-${DOCKER_VERSION}.tgz https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz && \
+@@ -50,18 +48,15 @@ RUN curl -sSL -o swagger-ui-v${SWAGGER_UI_VERSION}.tar.gz --no-verbose https://g
+     rm swagger-ui-v${SWAGGER_UI_VERSION}.tar.gz && \
+     sed -i s#http://petstore.swagger.io/v2/swagger.json#/api/v1/api-docs#g /swagger-ui/index.html
+ 
+-# Copy app jars
+-ADD build/distributions/controller.tar /
+-
+-COPY init.sh /
+-RUN chmod +x init.sh
+-
+-RUN adduser -D -u ${UID} -h /home/${NOT_ROOT_USER} -s /bin/bash ${NOT_ROOT_USER}
++RUN useradd -m -u ${UID} -d /home/${NOT_ROOT_USER} -s /bin/bash ${NOT_ROOT_USER}
++ADD build/distributions/controller.tar /home/${NOT_ROOT_USER}/
++ADD init.sh /home/${NOT_ROOT_USER}/init.sh
++RUN chmod +x /home/${NOT_ROOT_USER}/init.sh ;\
++     chown -R ${NOT_ROOT_USER}:${NOT_ROOT_USER} /home/${NOT_ROOT_USER} ;\
++     chmod -R g+w /home/${NOT_ROOT_USER} 
+ 
+-# It is possible to run as non root if you dont need invoker capabilities out of the controller today
+-# When running it as a non-root user this has implications on the standard directory where runc stores its data.
+-# The non-root user should have access on the directory and corresponding permission to make changes on it.
+-#USER ${NOT_ROOT_USER}
+ 
+ EXPOSE 8080
++WORKDIR /home/${NOT_ROOT_USER}
++USER ${NOT_ROOT_USER}
+ CMD ["./init.sh", "0"]
+diff --git a/core/controller/init.sh b/core/controller/init.sh
+index 48b8d5c1..b001474a 100644
+--- a/core/controller/init.sh
++++ b/core/controller/init.sh
+@@ -16,9 +16,9 @@
+ # limitations under the License.
+ #
+ 
+-./copyJMXFiles.sh
++/copyJMXFiles.sh
+ 
+ export CONTROLLER_OPTS
+-CONTROLLER_OPTS="$CONTROLLER_OPTS -Dakka.remote.netty.tcp.bind-hostname=$(hostname -i) $(./transformEnvironment.sh)"
++CONTROLLER_OPTS="$CONTROLLER_OPTS -Dakka.remote.netty.tcp.bind-hostname=$(hostname -i) $(/transformEnvironment.sh)"
+ 
+ exec controller/bin/controller "$@"
+diff --git a/core/cosmosdb/cache-invalidator/Dockerfile b/core/cosmosdb/cache-invalidator/Dockerfile
+index e8df8575..9c6c2b8e 100644
+--- a/core/cosmosdb/cache-invalidator/Dockerfile
++++ b/core/cosmosdb/cache-invalidator/Dockerfile
+@@ -27,7 +27,7 @@ ADD build/distributions/cache-invalidator.tar /
+ COPY init.sh /
+ RUN chmod +x init.sh
+ 
+-RUN adduser -D -u ${UID} -h /home/${NOT_ROOT_USER} -s /bin/bash ${NOT_ROOT_USER}
++RUN useradd -m -u ${UID} -d /home/${NOT_ROOT_USER} -s /bin/bash ${NOT_ROOT_USER}
+ USER ${NOT_ROOT_USER}
+ 
+ EXPOSE 8080
+diff --git a/core/invoker/Dockerfile b/core/invoker/Dockerfile
+index bf25b3ac..6596238f 100644
+--- a/core/invoker/Dockerfile
++++ b/core/invoker/Dockerfile
+@@ -19,13 +19,11 @@ FROM scala
+ 
+ ENV UID=1001 \
+     NOT_ROOT_USER=owuser
+-    ENV DOCKER_VERSION=18.06.3-ce
++
+ # If you change the docker version here, it has implications on invoker runc support.
+ # Docker server version and the invoker docker version must be the same to enable runc usage.
+ # If this cannot be guaranteed, set `invoker_use_runc: false` in the ansible env.
+-
+-
+-RUN apk add --update openssl
++ENV DOCKER_VERSION=18.06.3-ce
+ 
+ # Uncomment to fetch latest version of docker instead: RUN wget -qO- https://get.docker.com | sh
+ # Install docker client
+@@ -36,14 +34,14 @@ RUN curl -sSL -o docker-${DOCKER_VERSION}.tgz https://download.docker.com/linux/
+     chmod +x /usr/bin/docker && \
+     chmod +x /usr/bin/docker-runc
+ 
+-ADD build/distributions/invoker.tar ./
+-
+-COPY init.sh /
+-RUN chmod +x init.sh
+-
+-# When running the invoker as a non-root user this has implications on the standard directory where runc stores its data.
+-# The non-root user should have access on the directory and corresponding permission to make changes on it.
+-RUN adduser -D -u ${UID} -h /home/${NOT_ROOT_USER} -s /bin/bash ${NOT_ROOT_USER}
++RUN useradd -m -u ${UID} -d /home/${NOT_ROOT_USER} -s /bin/bash ${NOT_ROOT_USER}
++ADD build/distributions/invoker.tar /home/${NOT_ROOT_USER}/
++ADD init.sh /home/${NOT_ROOT_USER}/init.sh
++RUN chmod +x /home/${NOT_ROOT_USER}/init.sh ;\
++     chown -R ${NOT_ROOT_USER}:${NOT_ROOT_USER} /home/${NOT_ROOT_USER} ;\
++     chmod -R g+w /home/${NOT_ROOT_USER} 
+ 
+ EXPOSE 8080
++WORKDIR /home/${NOT_ROOT_USER}
++USER ${NOT_ROOT_USER}
+ CMD ["./init.sh", "0"]
+diff --git a/core/invoker/Dockerfile.cov b/core/invoker/Dockerfile.cov
+index 8e234573..e2869bcf 100644
+--- a/core/invoker/Dockerfile.cov
++++ b/core/invoker/Dockerfile.cov
+@@ -19,6 +19,7 @@ FROM invoker
+ 
+ ARG OW_ROOT_DIR
+ 
++USER root
+ RUN mkdir -p /coverage/common && \
+     mkdir -p /coverage/invoker && \
+     mkdir -p "${OW_ROOT_DIR}/common/scala/build" && \
+diff --git a/core/invoker/init.sh b/core/invoker/init.sh
+index b3e9cb9b..b9b51e81 100644
+--- a/core/invoker/init.sh
++++ b/core/invoker/init.sh
+@@ -16,9 +16,9 @@
+ # limitations under the License.
+ #
+ 
+-./copyJMXFiles.sh
++/copyJMXFiles.sh
+ 
+ export INVOKER_OPTS
+-INVOKER_OPTS="$INVOKER_OPTS $(./transformEnvironment.sh)"
++INVOKER_OPTS="$INVOKER_OPTS $(/transformEnvironment.sh)"
+ 
+ exec invoker/bin/invoker "$@"
+diff --git a/tests/dat/actions/unicode.tests/src/dotnet2.2/Apache.OpenWhisk.UnicodeTests.Dotnet/Unicode.cs b/tests/dat/actions/unicode.tests/src/dotnet2.2/Apache.OpenWhisk.UnicodeTests.Dotnet/Unicode.cs
+index 6963b869..fadd0909 100644
+--- a/tests/dat/actions/unicode.tests/src/dotnet2.2/Apache.OpenWhisk.UnicodeTests.Dotnet/Unicode.cs
++++ b/tests/dat/actions/unicode.tests/src/dotnet2.2/Apache.OpenWhisk.UnicodeTests.Dotnet/Unicode.cs
+@@ -32,4 +32,4 @@ namespace Apache.OpenWhisk.UnicodeTests.Dotnet
+             return (message);
+         }
+     }
+-}
+\ No newline at end of file
++}
+-- 
+2.34.1
+

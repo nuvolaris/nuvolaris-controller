@@ -1,0 +1,1935 @@
+From 9d98097fe4dcebd0348c4032ea6ef86a72ace484 Mon Sep 17 00:00:00 2001
+From: Michele Sciabarra <michele@sciabarra.com>
+Date: Sun, 11 Dec 2022 18:13:35 +0000
+Subject: [PATCH 3/3] rebuild openwhisk 1.0 nuvolaris flavor
+
+---
+ .github/workflows/0-on-demand.yaml     | 95 ++++++++++++++++++++++++++
+ .github/workflows/1-unit.yaml          | 70 +++++++++++++++++++
+ .github/workflows/2-system.yaml        | 70 +++++++++++++++++++
+ .github/workflows/3-multi-runtime.yaml | 70 +++++++++++++++++++
+ .github/workflows/4-standalone.yaml    | 70 +++++++++++++++++++
+ .github/workflows/5-scheduler.yaml     | 70 +++++++++++++++++++
+ .github/workflows/6-performance.yaml   | 81 ++++++++++++++++++++++
+ .github/workflows/README.md            | 56 +++++++++++++++
+ tools/github/README.md                 | 36 ++++++++++
+ tools/github/checkAndUploadLogs.sh     | 59 ++++++++++++++++
+ tools/github/debugAction.sh            | 61 +++++++++++++++++
+ tools/github/distDocker.sh             | 36 ++++++++++
+ tools/github/docker.conf               | 19 ++++++
+ tools/github/docker.sh                 | 56 +++++++++++++++
+ tools/github/flake8.sh                 | 42 ++++++++++++
+ tools/github/runDummyKOTests.sh        | 26 +++++++
+ tools/github/runDummyTests.sh          | 26 +++++++
+ tools/github/runLeanSystemTests.sh     | 36 ++++++++++
+ tools/github/runMultiRuntimeTests.sh   | 36 ++++++++++
+ tools/github/runSchedulerTests.sh      | 35 ++++++++++
+ tools/github/runStandaloneTests.sh     | 64 +++++++++++++++++
+ tools/github/runSystemTests.sh         | 36 ++++++++++
+ tools/github/runTests.sh               | 32 +++++++++
+ tools/github/runUnitTests.sh           | 34 +++++++++
+ tools/github/s3-upload.sh              | 57 ++++++++++++++++
+ tools/github/scan.sh                   | 52 ++++++++++++++
+ tools/github/setup-docker.py           | 78 +++++++++++++++++++++
+ tools/github/setup.sh                  | 61 +++++++++++++++++
+ tools/github/setupLeanSystem.sh        | 33 +++++++++
+ tools/github/setupPrereq.sh            | 38 +++++++++++
+ tools/github/setupSystem.sh            | 36 ++++++++++
+ tools/github/waitIfDebug.sh            | 37 ++++++++++
+ tools/github/writeOnSlack.sh           | 28 ++++++++
+ tools/github/writeToSlack.sh           | 12 ++++
+ 34 files changed, 1648 insertions(+)
+ create mode 100644 .github/workflows/0-on-demand.yaml
+ create mode 100644 .github/workflows/1-unit.yaml
+ create mode 100644 .github/workflows/2-system.yaml
+ create mode 100644 .github/workflows/3-multi-runtime.yaml
+ create mode 100644 .github/workflows/4-standalone.yaml
+ create mode 100644 .github/workflows/5-scheduler.yaml
+ create mode 100644 .github/workflows/6-performance.yaml
+ create mode 100644 .github/workflows/README.md
+ create mode 100644 tools/github/README.md
+ create mode 100755 tools/github/checkAndUploadLogs.sh
+ create mode 100755 tools/github/debugAction.sh
+ create mode 100755 tools/github/distDocker.sh
+ create mode 100644 tools/github/docker.conf
+ create mode 100755 tools/github/docker.sh
+ create mode 100755 tools/github/flake8.sh
+ create mode 100755 tools/github/runDummyKOTests.sh
+ create mode 100755 tools/github/runDummyTests.sh
+ create mode 100755 tools/github/runLeanSystemTests.sh
+ create mode 100755 tools/github/runMultiRuntimeTests.sh
+ create mode 100755 tools/github/runSchedulerTests.sh
+ create mode 100755 tools/github/runStandaloneTests.sh
+ create mode 100755 tools/github/runSystemTests.sh
+ create mode 100755 tools/github/runTests.sh
+ create mode 100755 tools/github/runUnitTests.sh
+ create mode 100755 tools/github/s3-upload.sh
+ create mode 100755 tools/github/scan.sh
+ create mode 100755 tools/github/setup-docker.py
+ create mode 100755 tools/github/setup.sh
+ create mode 100755 tools/github/setupLeanSystem.sh
+ create mode 100755 tools/github/setupPrereq.sh
+ create mode 100755 tools/github/setupSystem.sh
+ create mode 100755 tools/github/waitIfDebug.sh
+ create mode 100755 tools/github/writeOnSlack.sh
+ create mode 100755 tools/github/writeToSlack.sh
+
+diff --git a/.github/workflows/0-on-demand.yaml b/.github/workflows/0-on-demand.yaml
+new file mode 100644
+index 00000000..5ef33796
+--- /dev/null
++++ b/.github/workflows/0-on-demand.yaml
+@@ -0,0 +1,95 @@
++# Licensed to the Apache Software Foundation (ASF) under one
++# or more contributor license agreements.  See the NOTICE file
++# distributed with this work for additional information
++# regarding copyright ownership.  The ASF licenses this file
++# to you under the Apache License, Version 2.0 (the
++# "License"); you may not use this file except in compliance
++# with the License.  You may obtain a copy of the License at
++#
++#   http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing,
++# software distributed under the License is distributed on an
++# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++# KIND, either express or implied.  See the License for the
++# specific language governing permissions and limitations
++# under the License.
++#
++name: On Demand Tests
++
++on:
++  workflow_dispatch:
++    inputs:
++      enable_ngrok_debug:
++        description: "Enable Ngrok Debugging"
++        required: true
++        type: boolean
++        default: false
++      test_suite:
++        description: Select Test Suite to run
++        type: choice
++        options: 
++        - Unit
++        - System
++        - MultiRuntime
++        - Standalone
++        - Scheduler
++        ## TODO
++        #- Performance
++        ## Uncomment those to debug the build
++        - Dummy
++        - DummyKO
++
++env:
++  # openwhisk env
++  TEST_SUITE: ${{ inputs.test_suite }}
++  JAVA_DISTRO: corretto
++  ANSIBLE_CMD: "ansible-playbook -i environments/local -e docker_image_prefix=testing"
++  GRADLE_PROJS_SKIP: ""
++
++  ## secrets
++  # (optional) slack incoming wehbook for notifications
++  SLACK_WEBHOOK: ${{secrets.SLACK_WEBHOOK}}
++
++  # (optional) s3 log upload
++  S3_LOG_BUCKET: ${{ secrets.S3_LOG_BUCKET }}
++  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
++  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
++  AWS_REGION: ${{ secrets.AWS_REGION }}
++
++  # (optional) you need to add as secrets an ngrok token and a password to debug a build on demand
++  NGROK_DEBUG: ${{ inputs.enable_ngrok_debug }}
++  NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
++  NGROK_PASSWORD: ${{ secrets.NGROK_PASSWORD }}
++
++  # github
++  GH_BUILD: ${{ github.run_id }}-${{ github.event_name }} 
++  GH_BRANCH: ${{ github.head_ref || github.ref_name }} 
++
++jobs:
++  openwhisk:
++    runs-on: ubuntu-22.04
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v3
++      - name: "Setup"
++        run: ./tools/github/setup.sh
++      - id: tests
++        name: Run Tests
++        run: "./tools/github/run${{ env.TEST_SUITE }}Tests.sh"
++        continue-on-error: true
++      - id: logs
++        name: Upload Logs
++        run: ./tools/github/checkAndUploadLogs.sh ${{ env.TEST_SUITE }}
++      - name: Slack Notification
++        run: > 
++             ./tools/github/writeOnSlack.sh "[$TEST_SUITE]"
++             $GH_BUILD: ${{ steps.tests.outcome }}
++             $'\nbranch:' $GH_BRANCH  
++             $'\nlogurl:' ${{ steps.logs.outputs.logurl }}
++      - name: Debug Action (if requested)
++        run:  ./tools/github/debugAction.sh
++      - name: Wait for Debug (if requested)
++        run: ./tools/github/waitIfDebug.sh
++      - name: Results
++        run: test "${{ steps.tests.outcome }}" ==  "success"
+diff --git a/.github/workflows/1-unit.yaml b/.github/workflows/1-unit.yaml
+new file mode 100644
+index 00000000..7d9fe91c
+--- /dev/null
++++ b/.github/workflows/1-unit.yaml
+@@ -0,0 +1,70 @@
++# Licensed to the Apache Software Foundation (ASF) under one
++# or more contributor license agreements.  See the NOTICE file
++# distributed with this work for additional information
++# regarding copyright ownership.  The ASF licenses this file
++# to you under the Apache License, Version 2.0 (the
++# "License"); you may not use this file except in compliance
++# with the License.  You may obtain a copy of the License at
++#
++#   http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing,
++# software distributed under the License is distributed on an
++# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++# KIND, either express or implied.  See the License for the
++# specific language governing permissions and limitations
++# under the License.
++#
++name: Unit Tests
++
++on:
++  # build on tagged
++  push:
++    tags: '*'
++  # build on pull requests
++  pull_request:
++
++env:
++  # openwhisk env
++  TEST_SUITE: Unit
++  JAVA_DISTRO: corretto
++  ANSIBLE_CMD: "ansible-playbook -i environments/local -e docker_image_prefix=testing"
++  GRADLE_PROJS_SKIP: ""
++
++  ## secrets
++  # (optional) slack incoming wehbook for notifications
++  SLACK_WEBHOOK: ${{secrets.SLACK_WEBHOOK}}
++
++  # (optional) s3 log upload
++  S3_LOG_BUCKET: ${{ secrets.S3_LOG_BUCKET }}
++  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
++  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
++  AWS_REGION: ${{ secrets.AWS_REGION }}
++
++  # github
++  GH_BUILD: ${{ github.run_id }}-${{ github.event_name }} 
++  GH_BRANCH: ${{ github.head_ref || github.ref_name }} 
++
++jobs:
++  openwhisk:
++    runs-on: ubuntu-22.04
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v3
++      - name: "Setup"
++        run: ./tools/github/setup.sh
++      - id: tests
++        name: Run Tests
++        run: "./tools/github/run${{ env.TEST_SUITE }}Tests.sh"
++        continue-on-error: true
++      - id: logs
++        name: Upload Logs
++        run: ./tools/github/checkAndUploadLogs.sh ${{ env.TEST_SUITE }}
++      - name: Slack Notification
++        run: > 
++             ./tools/github/writeOnSlack.sh "[$TEST_SUITE]"
++             $GH_BUILD: ${{ steps.tests.outcome }}
++             $'\nbranch:' $GH_BRANCH  
++             $'\nlogurl:' ${{ steps.logs.outputs.logurl }}
++      - name: Results
++        run: test "${{ steps.tests.outcome }}" ==  "success"
+diff --git a/.github/workflows/2-system.yaml b/.github/workflows/2-system.yaml
+new file mode 100644
+index 00000000..e2face10
+--- /dev/null
++++ b/.github/workflows/2-system.yaml
+@@ -0,0 +1,70 @@
++# Licensed to the Apache Software Foundation (ASF) under one
++# or more contributor license agreements.  See the NOTICE file
++# distributed with this work for additional information
++# regarding copyright ownership.  The ASF licenses this file
++# to you under the Apache License, Version 2.0 (the
++# "License"); you may not use this file except in compliance
++# with the License.  You may obtain a copy of the License at
++#
++#   http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing,
++# software distributed under the License is distributed on an
++# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++# KIND, either express or implied.  See the License for the
++# specific language governing permissions and limitations
++# under the License.
++#
++name: System Tests
++
++on:
++  # build on tagged
++  push:
++    tags: '*'
++  # build on pull requests
++  pull_request:
++
++env:
++  # openwhisk env
++  TEST_SUITE: System
++  JAVA_DISTRO: corretto
++  ANSIBLE_CMD: "ansible-playbook -i environments/local -e docker_image_prefix=testing"
++  GRADLE_PROJS_SKIP: ""
++
++  ## secrets
++  # (optional) slack incoming wehbook for notifications
++  SLACK_WEBHOOK: ${{secrets.SLACK_WEBHOOK}}
++
++  # (optional) s3 log upload
++  S3_LOG_BUCKET: ${{ secrets.S3_LOG_BUCKET }}
++  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
++  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
++  AWS_REGION: ${{ secrets.AWS_REGION }}
++
++  # github
++  GH_BUILD: ${{ github.run_id }}-${{ github.event_name }} 
++  GH_BRANCH: ${{ github.head_ref || github.ref_name }} 
++
++jobs:
++  openwhisk:
++    runs-on: ubuntu-22.04
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v3
++      - name: "Setup"
++        run: ./tools/github/setup.sh
++      - id: tests
++        name: Run Tests
++        run: "./tools/github/run${{ env.TEST_SUITE }}Tests.sh"
++        continue-on-error: true
++      - id: logs
++        name: Upload Logs
++        run: ./tools/github/checkAndUploadLogs.sh ${{ env.TEST_SUITE }}
++      - name: Slack Notification
++        run: > 
++             ./tools/github/writeOnSlack.sh "[$TEST_SUITE]"
++             $GH_BUILD: ${{ steps.tests.outcome }}
++             $'\nbranch:' $GH_BRANCH  
++             $'\nlogurl:' ${{ steps.logs.outputs.logurl }}
++      - name: Results
++        run: test "${{ steps.tests.outcome }}" ==  "success"
+diff --git a/.github/workflows/3-multi-runtime.yaml b/.github/workflows/3-multi-runtime.yaml
+new file mode 100644
+index 00000000..c83628b9
+--- /dev/null
++++ b/.github/workflows/3-multi-runtime.yaml
+@@ -0,0 +1,70 @@
++# Licensed to the Apache Software Foundation (ASF) under one
++# or more contributor license agreements.  See the NOTICE file
++# distributed with this work for additional information
++# regarding copyright ownership.  The ASF licenses this file
++# to you under the Apache License, Version 2.0 (the
++# "License"); you may not use this file except in compliance
++# with the License.  You may obtain a copy of the License at
++#
++#   http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing,
++# software distributed under the License is distributed on an
++# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++# KIND, either express or implied.  See the License for the
++# specific language governing permissions and limitations
++# under the License.
++#
++name: MultiRuntime Tests
++
++on:
++  # build on tagged
++  push:
++    tags: '*'
++  # build on pull requests
++  pull_request:
++
++env:
++  # openwhisk env
++  TEST_SUITE: MultiRuntime
++  JAVA_DISTRO: corretto
++  ANSIBLE_CMD: "ansible-playbook -i environments/local -e docker_image_prefix=testing"
++  GRADLE_PROJS_SKIP: ""
++
++  ## secrets
++  # (optional) slack incoming wehbook for notifications
++  SLACK_WEBHOOK: ${{secrets.SLACK_WEBHOOK}}
++
++  # (optional) s3 log upload
++  S3_LOG_BUCKET: ${{ secrets.S3_LOG_BUCKET }}
++  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
++  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
++  AWS_REGION: ${{ secrets.AWS_REGION }}
++
++  # github
++  GH_BUILD: ${{ github.run_id }}-${{ github.event_name }} 
++  GH_BRANCH: ${{ github.head_ref || github.ref_name }} 
++
++jobs:
++  openwhisk:
++    runs-on: ubuntu-22.04
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v3
++      - name: "Setup"
++        run: ./tools/github/setup.sh
++      - id: tests
++        name: Run Tests
++        run: "./tools/github/run${{ env.TEST_SUITE }}Tests.sh"
++        continue-on-error: true
++      - id: logs
++        name: Upload Logs
++        run: ./tools/github/checkAndUploadLogs.sh ${{ env.TEST_SUITE }}
++      - name: Slack Notification
++        run: > 
++             ./tools/github/writeOnSlack.sh "[$TEST_SUITE]"
++             $GH_BUILD: ${{ steps.tests.outcome }}
++             $'\nbranch:' $GH_BRANCH  
++             $'\nlogurl:' ${{ steps.logs.outputs.logurl }}
++      - name: Results
++        run: test "${{ steps.tests.outcome }}" ==  "success"
+diff --git a/.github/workflows/4-standalone.yaml b/.github/workflows/4-standalone.yaml
+new file mode 100644
+index 00000000..1ebbc43f
+--- /dev/null
++++ b/.github/workflows/4-standalone.yaml
+@@ -0,0 +1,70 @@
++# Licensed to the Apache Software Foundation (ASF) under one
++# or more contributor license agreements.  See the NOTICE file
++# distributed with this work for additional information
++# regarding copyright ownership.  The ASF licenses this file
++# to you under the Apache License, Version 2.0 (the
++# "License"); you may not use this file except in compliance
++# with the License.  You may obtain a copy of the License at
++#
++#   http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing,
++# software distributed under the License is distributed on an
++# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++# KIND, either express or implied.  See the License for the
++# specific language governing permissions and limitations
++# under the License.
++#
++name: Standalone Tests
++
++on:
++  # build on tagged
++  push:
++    tags: '*'
++  # build on pull requests
++  pull_request:
++
++env:
++  # openwhisk env
++  TEST_SUITE: Standalone
++  JAVA_DISTRO: corretto
++  ANSIBLE_CMD: "ansible-playbook -i environments/local -e docker_image_prefix=testing"
++  GRADLE_PROJS_SKIP: ""
++
++  ## secrets
++  # (optional) slack incoming wehbook for notifications
++  SLACK_WEBHOOK: ${{secrets.SLACK_WEBHOOK}}
++
++  # (optional) s3 log upload
++  S3_LOG_BUCKET: ${{ secrets.S3_LOG_BUCKET }}
++  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
++  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
++  AWS_REGION: ${{ secrets.AWS_REGION }}
++
++  # github
++  GH_BUILD: ${{ github.run_id }}-${{ github.event_name }} 
++  GH_BRANCH: ${{ github.head_ref || github.ref_name }} 
++
++jobs:
++  openwhisk:
++    runs-on: ubuntu-22.04
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v3
++      - name: "Setup"
++        run: ./tools/github/setup.sh
++      - id: tests
++        name: Run Tests
++        run: "./tools/github/run${{ env.TEST_SUITE }}Tests.sh"
++        continue-on-error: true
++      - id: logs
++        name: Upload Logs
++        run: ./tools/github/checkAndUploadLogs.sh ${{ env.TEST_SUITE }}
++      - name: Slack Notification
++        run: > 
++             ./tools/github/writeOnSlack.sh "[$TEST_SUITE]"
++             $GH_BUILD: ${{ steps.tests.outcome }}
++             $'\nbranch:' $GH_BRANCH  
++             $'\nlogurl:' ${{ steps.logs.outputs.logurl }}
++      - name: Results
++        run: test "${{ steps.tests.outcome }}" ==  "success"
+diff --git a/.github/workflows/5-scheduler.yaml b/.github/workflows/5-scheduler.yaml
+new file mode 100644
+index 00000000..175368b7
+--- /dev/null
++++ b/.github/workflows/5-scheduler.yaml
+@@ -0,0 +1,70 @@
++# Licensed to the Apache Software Foundation (ASF) under one
++# or more contributor license agreements.  See the NOTICE file
++# distributed with this work for additional information
++# regarding copyright ownership.  The ASF licenses this file
++# to you under the Apache License, Version 2.0 (the
++# "License"); you may not use this file except in compliance
++# with the License.  You may obtain a copy of the License at
++#
++#   http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing,
++# software distributed under the License is distributed on an
++# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++# KIND, either express or implied.  See the License for the
++# specific language governing permissions and limitations
++# under the License.
++#
++name: Scheduler Tests
++
++on:
++  # build on tagged
++  push:
++    tags: '*'
++  # build on pull requests
++  pull_request:
++
++env:
++  # openwhisk env
++  TEST_SUITE: Scheduler
++  JAVA_DISTRO: corretto
++  ANSIBLE_CMD: "ansible-playbook -i environments/local -e docker_image_prefix=testing"
++  GRADLE_PROJS_SKIP: ""
++
++  ## secrets
++  # (optional) slack incoming wehbook for notifications
++  SLACK_WEBHOOK: ${{secrets.SLACK_WEBHOOK}}
++
++  # (optional) s3 log upload
++  S3_LOG_BUCKET: ${{ secrets.S3_LOG_BUCKET }}
++  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
++  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
++  AWS_REGION: ${{ secrets.AWS_REGION }}
++
++  # github
++  GH_BUILD: ${{ github.run_id }}-${{ github.event_name }} 
++  GH_BRANCH: ${{ github.head_ref || github.ref_name }} 
++
++jobs:
++  openwhisk:
++    runs-on: ubuntu-22.04
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v3
++      - name: "Setup"
++        run: ./tools/github/setup.sh
++      - id: tests
++        name: Run Tests
++        run: "./tools/github/run${{ env.TEST_SUITE }}Tests.sh"
++        continue-on-error: true
++      - id: logs
++        name: Upload Logs
++        run: ./tools/github/checkAndUploadLogs.sh ${{ env.TEST_SUITE }}
++      - name: Slack Notification
++        run: > 
++             ./tools/github/writeOnSlack.sh "[$TEST_SUITE]"
++             $GH_BUILD: ${{ steps.tests.outcome }}
++             $'\nbranch:' $GH_BRANCH  
++             $'\nlogurl:' ${{ steps.logs.outputs.logurl }}
++      - name: Results
++        run: test "${{ steps.tests.outcome }}" ==  "success"
+diff --git a/.github/workflows/6-performance.yaml b/.github/workflows/6-performance.yaml
+new file mode 100644
+index 00000000..9588f573
+--- /dev/null
++++ b/.github/workflows/6-performance.yaml
+@@ -0,0 +1,81 @@
++# Licensed to the Apache Software Foundation (ASF) under one
++# or more contributor license agreements.  See the NOTICE file
++# distributed with this work for additional information
++# regarding copyright ownership.  The ASF licenses this file
++# to you under the Apache License, Version 2.0 (the
++# "License"); you may not use this file except in compliance
++# with the License.  You may obtain a copy of the License at
++#
++#   http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing,
++# software distributed under the License is distributed on an
++# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++# KIND, either express or implied.  See the License for the
++# specific language governing permissions and limitations
++# under the License.
++#
++name: Performance Tests
++
++on:
++  # build on tagged
++  push:
++    tags: '*'
++  # build on pull requests
++  pull_request:
++
++env:
++  # openwhisk env
++  TEST_SUITE: Performance
++  JAVA_DISTRO: corretto
++  ANSIBLE_CMD: "ansible-playbook -i environments/local -e docker_image_prefix=testing"
++  GRADLE_PROJS_SKIP: ""
++
++  ## secrets
++  # (optional) slack incoming wehbook for notifications
++  SLACK_WEBHOOK: ${{secrets.SLACK_WEBHOOK}}
++
++  # (optional) s3 log upload
++  S3_LOG_BUCKET: ${{ secrets.S3_LOG_BUCKET }}
++  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
++  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
++  AWS_REGION: ${{ secrets.AWS_REGION }}
++
++  # github
++  GH_BUILD: ${{ github.run_id }}-${{ github.event_name }} 
++  GH_BRANCH: ${{ github.head_ref || github.ref_name }} 
++
++jobs:
++  openwhisk:
++    runs-on: ubuntu-22.04
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v3
++      - name: "Setup"
++        run: ./tools/github/setup.sh
++      - run: ./tests/performance/preparation/deploy.sh
++      - run: TERM=dumb ./tests/performance/wrk_tests/latency.sh "https://172.17.0.1:10001" "$(cat ansible/files/auth.guest)" ./tests/performance/preparation/actions/noop.js 2m
++        continue-on-error: true
++      - run: TERM=dumb ./tests/performance/wrk_tests/latency.sh "https://172.17.0.1:10001" "$(cat ansible/files/auth.guest)" ./tests/performance/preparation/actions/async.js 2m
++        continue-on-error: true
++      - run: TERM=dumb ./tests/performance/wrk_tests/throughput.sh "https://172.17.0.1:10001" "$(cat ansible/files/auth.guest)" ./tests/performance/preparation/actions/noop.js 4 1 2 2m
++        continue-on-error: true
++      - run: TERM=dumb ./tests/performance/wrk_tests/throughput.sh "https://172.17.0.1:10001" "$(cat ansible/files/auth.guest)" ./tests/performance/preparation/actions/async.js 4 1 2 2m
++        continue-on-error: true
++      - run: TERM=dumb ./tests/performance/wrk_tests/throughput.sh "https://172.17.0.1:10001" "$(cat ansible/files/auth.guest)" ./tests/performance/preparation/actions/noop.js 100 110 2 2m
++        continue-on-error: true
++      - run: TERM=dumb ./tests/performance/wrk_tests/throughput.sh "https://172.17.0.1:10001" "$(cat ansible/files/auth.guest)" ./tests/performance/preparation/actions/async.js 100 110 2 2m
++        continue-on-error: true
++      - run: OPENWHISK_HOST="172.17.0.1" CONNECTIONS="100" REQUESTS_PER_SEC="1" ./gradlew gatlingRun-org.apache.openwhisk.ApiV1Simulation
++        continue-on-error: true
++      - run: OPENWHISK_HOST="172.17.0.1" MEAN_RESPONSE_TIME="1000" API_KEY="$(cat ansible/files/auth.guest)" EXCLUDED_KINDS="python:default,java:default,swift:default" PAUSE_BETWEEN_INVOKES="100" ./gradlew gatlingRun-org.apache.openwhisk.LatencySimulation
++        continue-on-error: true
++      - run: OPENWHISK_HOST="172.17.0.1" API_KEY="$(cat ansible/files/auth.guest)" CONNECTIONS="100" REQUESTS_PER_SEC="1" ./gradlew gatlingRun-org.apache.openwhisk.BlockingInvokeOneActionSimulation
++        continue-on-error: true
++      - run: OPENWHISK_HOST="172.17.0.1" API_KEY="$(cat ansible/files/auth.guest)" CONNECTIONS="100" REQUESTS_PER_SEC="1" ASYNC="true" ./gradlew gatlingRun-org.apache.openwhisk.BlockingInvokeOneActionSimulation
++        continue-on-error: true
++      - name: Slack Notification
++        run: > 
++             ./tools/github/writeOnSlack.sh "[$TEST_SUITE]"
++             $'\nbranch:' $GH_BRANCH
++             $'\nCheck GitHub logs for results'
+\ No newline at end of file
+diff --git a/.github/workflows/README.md b/.github/workflows/README.md
+new file mode 100644
+index 00000000..c454e35e
+--- /dev/null
++++ b/.github/workflows/README.md
+@@ -0,0 +1,56 @@
++# How to use those workflows
++
++There are a few [GitHub secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets) to configure to fully leverage the build.
++
++You can use and set the followings secrets also in your fork.
++
++## Ngrok Debugging
++
++You can debug a GitHub Action build using [NGROK](https://ngrok.com/).
++
++It is disabled for automated build triggered by push and pull_requests.
++
++You can trigger a workflow run manually  enabling ngrok debugging.
++
++It will open an ssh connection to the VM and keep it up and running for one hour.
++The connection url is showns in the log for debugAction.sh
++
++You can then connect to the build vm, and debug it.
++You need to use a password of your choice to access it.
++
++You can continue the build with `touch /tmp/continue`.
++You can abort the build with `touch /tmp/abort`.
++
++To enable this option you have to register to Ngrok, using the fee account and get the NGROK Token.
++
++Then set the following secrets:
++
++- `NGROK_TOKEN` to the ngrok token.
++- `NGROK_PASSWORD` to a password of choice to access the build with the ssh command generated.
++
++## Log Upload
++
++The build uploads the logs to an s3 bucket allowing to inspect them with a browser.
++
++You need to create the bucket with the following commands:
++
++```
++S3_LOG_BUCKET=<name-of-your-bucket>
++AWS_REGION=<the-region-you-use>
++aws s3 mb s3://$S3_LOG_BUCKET --region $AWS_REGION
++aws s3 website s3://$S3_LOG_BUCKET/ --index-document index.html
++aws s3api put-bucket-acl --acl public-read --bucket $S3_LOG_BUCKET
++```
++
++To enable upload to the created bucket you need to set the following secrets:
++
++- `S3_LOG_BUCKET`: name of your bucket in s3 (just the name, without `s3://`); create it before.
++- `AWS_ACCESS_KEY_ID`: your aws access key.
++- `AWS_SECRET_ACCESS_KEY`: your aws secret key.
++- `AWS_REGION`: important: the region where your bucket is.
++
++## Slack notification
++
++If you want to get notified of what happens on slack, create an [Incoming Web Hook](https://api.slack.com/messaging/webhooks) and then set the following secret:
++
++- `SLACK_WEBHOOK`: the incoming webhook url provided by slack.
+diff --git a/tools/github/README.md b/tools/github/README.md
+new file mode 100644
+index 00000000..8d0fbad9
+--- /dev/null
++++ b/tools/github/README.md
+@@ -0,0 +1,36 @@
++<!--
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++-->
++
++# Travis Setup
++
++Travis build is configured to perform build of this repo in multiple parallel jobs as listed below.
++
++1. Unit Tests - Runs the test which only need database service.
++2. System Tests - Runs those tests which need complete OpenWhisk system up and running.
++3. Performance test suite - Run basic performance tests with the objective to check if tests are working or not.
++
++These jobs make use of following scripts
++
++1. `scan.sh` - Performs various code scan task like python flake scan, scala formatting etc.
++2. `setupPrereq.sh` - Performs setup if basis prerequisites like database setup and property file generation.
++3. `distDocker.sh` - Builds the various docker containers.
++4. `setupSystem.sh` - Runs the various containers which are part of an OpenWhisk setup like Controller, Invoker etc.
++5. `runTests.sh` - Runs the tests. It make use of `ORG_GRADLE_PROJECT_testSetName` env setting to determine which test
++   suite to run.
++6. `checkAndUploadLogs.sh` -  Collects the logs, checks them and uploads them to https://openwhisk.box.com/v/travis-logs.
+diff --git a/tools/github/checkAndUploadLogs.sh b/tools/github/checkAndUploadLogs.sh
+new file mode 100755
+index 00000000..6681202d
+--- /dev/null
++++ b/tools/github/checkAndUploadLogs.sh
+@@ -0,0 +1,59 @@
++#!/usr/bin/env bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++# check variables
++for i in S3_LOG_BUCKET AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_REGION
++do
++  if test -z "${!i}" 
++  then echo "Required Environment Variable Missing: $i" ; exit 1
++  fi
++done
++
++# Disable abort script at first error as we require the logs to be uploaded
++# even if check and log collection fails
++# set -e
++
++
++SECONDS=0
++SCRIPTDIR=$(cd $(dirname "$0") && pwd)
++ROOTDIR="$SCRIPTDIR/../.."
++
++cd $ROOTDIR
++
++LOG_NAME="$1"
++
++# tags is db only when the test is unit
++TAGS=""
++[[ "$2" == "Unit" ]] && TAGS="db"
++
++LOG_DIR="$(date +%Y-%m-%d)/${LOG_NAME}-${GH_BUILD}-${GH_BRANCH}"
++
++# Perf logs are typically about 20MB and thus rapidly fill our box account.
++# Disable upload to reduce the interval at which we need to manually clean logs from box.
++if [ "$LOG_NAME" == "Performance" ]; then
++    echo "Skipping upload of perf logs to conserve space"
++    exit 0
++fi
++
++ansible-playbook -i ansible/environments/local ansible/logs.yml
++
++./tools/build/checkLogs.py logs "$TAGS"
++
++./tools/github/s3-upload.sh "$PWD/logs" "$LOG_DIR"
++
++echo "Time taken for ${0##*/} is $SECONDS secs"
+diff --git a/tools/github/debugAction.sh b/tools/github/debugAction.sh
+new file mode 100755
+index 00000000..e1691d13
+--- /dev/null
++++ b/tools/github/debugAction.sh
+@@ -0,0 +1,61 @@
++#!/bin/bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++if [[ -z "$NGROK_DEBUG" ]] || [[ "$NGROK_DEBUG" == "false" ]]
++then exit 0
++fi
++
++if [[ -z "$NGROK_TOKEN" ]]
++then echo "Please set 'NGROK_TOKEN'"
++     exit 1
++fi
++
++if [[ -z "$NGROK_PASSWORD" ]]
++then echo "Please set 'NGROK_PASSWORD'"
++     exit 1
++fi
++
++echo "### Install ngrok ###"
++if ! test -e ./ngrok
++then
++  wget -q https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-386.zip
++  unzip ngrok-stable-linux-386.zip
++  chmod +x ./ngrok
++fi
++
++echo "### Update user: $USER password ###"
++echo -e "$NGROK_PASSWORD\n$NGROK_PASSWORD" | sudo passwd "$USER"
++
++echo "### Start ngrok proxy for 22 port ###"
++
++rm -f .ngrok.log
++./ngrok authtoken "$NGROK_TOKEN"
++./ngrok tcp 22 --log ".ngrok.log" &
++
++sleep 10
++HAS_ERRORS=$(grep "command failed" < .ngrok.log)
++
++if [[ -z "$HAS_ERRORS" ]]; then
++  echo ""
++  echo "=========================================="
++  echo "To connect: $(grep -o -E "tcp://(.+)" < .ngrok.log | sed "s/tcp:\/\//ssh $USER@/" | sed "s/:/ -p /")"
++  echo "=========================================="
++else
++  echo "$HAS_ERRORS"
++  exit 1
++fi
+diff --git a/tools/github/distDocker.sh b/tools/github/distDocker.sh
+new file mode 100755
+index 00000000..13c8450d
+--- /dev/null
++++ b/tools/github/distDocker.sh
+@@ -0,0 +1,36 @@
++#!/bin/bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++set -e
++
++# Build script for Travis-CI.
++
++SECONDS=0
++SCRIPTDIR=$(cd $(dirname "$0") && pwd)
++ROOTDIR="$SCRIPTDIR/../.."
++
++cd $ROOTDIR
++TERM=dumb ./gradlew clean # Run a clean step before build
++TERM=dumb ./gradlew distDocker -PdockerImagePrefix=testing $GRADLE_PROJS_SKIP
++
++TERM=dumb ./gradlew :core:controller:distDockerCoverage -PdockerImagePrefix=testing
++TERM=dumb ./gradlew :core:scheduler:distDockerCoverage -PdockerImagePrefix=testing
++TERM=dumb ./gradlew :core:invoker:distDockerCoverage -PdockerImagePrefix=testing
++TERM=dumb ./gradlew :core:standalone:build
++
++echo "Time taken for ${0##*/} is $SECONDS secs"
+diff --git a/tools/github/docker.conf b/tools/github/docker.conf
+new file mode 100644
+index 00000000..4b9d8df6
+--- /dev/null
++++ b/tools/github/docker.conf
+@@ -0,0 +1,19 @@
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++[Service]
++ExecStart=
++ExecStart=/usr/bin/dockerd
+diff --git a/tools/github/docker.sh b/tools/github/docker.sh
+new file mode 100755
+index 00000000..21eed7c2
+--- /dev/null
++++ b/tools/github/docker.sh
+@@ -0,0 +1,56 @@
++#!/bin/bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++BASEDIR=$(dirname "$0")
++echo "$BASEDIR"
++
++sudo gpasswd -a travis docker
++sudo usermod -aG docker travis
++#sudo -E bash -c 'echo '\''DOCKER_OPTS="-H tcp://0.0.0.0:4243 -H unix:///var/run/docker.sock --storage-driver=overlay --userns-remap=default"'\'' > /etc/default/docker'
++
++# Docker
++sudo apt-get clean
++sudo apt-get update
++
++# Need to update dpkg due to known issue: https://bugs.launchpad.net/ubuntu/+source/dpkg/+bug/1730627
++sudo apt-get install -y apt-transport-https ca-certificates curl gnupg-agent software-properties-common dpkg
++curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
++sudo apt-key fingerprint 0EBFCD88
++
++# This is required because libseccomp2 (>= 2.3.0) is not provided in trusty by default
++sudo add-apt-repository -y ppa:ubuntu-sdk-team/ppa
++
++sudo add-apt-repository \
++    "deb [arch=$(uname -m | sed -e 's/x86_64/amd64/g')] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
++
++sudo apt-get update
++sudo apt-get -o Dpkg::Options::="--force-confold" --force-yes -y install docker-ce=18.06.3~ce~3-0~ubuntu containerd.io
++# daemon.json and flags does not work together. Overwritting the docker.service file
++# to remove the host flags. - https://docs.docker.com/config/daemon/#troubleshoot-conflicts-between-the-daemonjson-and-startup-scripts
++sudo mkdir -p /etc/systemd/system/docker.service.d
++sudo cp $BASEDIR/docker.conf /etc/systemd/system/docker.service.d/docker.conf
++# setup-docker will add configs to /etc/docker/daemon.json
++sudo python $BASEDIR/setup-docker.py
++sudo cat /etc/docker/daemon.json
++sudo systemctl daemon-reload
++sudo systemctl restart docker
++sudo systemctl status docker.service
++echo "Docker Version:"
++docker version
++echo "Docker Info:"
++docker info
+diff --git a/tools/github/flake8.sh b/tools/github/flake8.sh
+new file mode 100755
+index 00000000..98b7c0d9
+--- /dev/null
++++ b/tools/github/flake8.sh
+@@ -0,0 +1,42 @@
++#!/bin/bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++pip3 install --user --upgrade flake8
++
++# These files do not have a .py extension so flake8 will not scan them
++declare -a PYTHON_FILES=("."
++                         "./tools/admin/wskadmin"
++                         "./tools/build/citool"
++                         "./tools/build/redo")
++
++echo 'Flake8: first round (fast fail) stops the build if there are any Python 3 syntax errors...'
++for i in "${PYTHON_FILES[@]}"
++do
++    flake8 "$i" --select=E999,F821 --statistics
++    RETURN_CODE=$?
++    if [ $RETURN_CODE != 0 ]; then
++        echo 'Flake8 found Python 3 syntax errors above. See: https://docs.python.org/3/howto/pyporting.html'
++        exit $RETURN_CODE
++    fi
++done
++
++echo 'Flake8: second round to find any other stylistic issues...'
++for i in "${PYTHON_FILES[@]}"
++do
++    flake8 "$i" --ignore=E,W503,W504,W605 --max-line-length=127 --statistics
++done
+diff --git a/tools/github/runDummyKOTests.sh b/tools/github/runDummyKOTests.sh
+new file mode 100755
+index 00000000..e7d2e7d6
+--- /dev/null
++++ b/tools/github/runDummyKOTests.sh
+@@ -0,0 +1,26 @@
++#!/usr/bin/env bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++set -e
++
++SCRIPTDIR=$(cd $(dirname "$0") && pwd)
++ROOTDIR="$SCRIPTDIR/../.."
++
++mkdir $ROOTDIR/logs
++echo "<h1>$(date)</h1>" >$ROOTDIR/logs/index.html
++exit 1
+\ No newline at end of file
+diff --git a/tools/github/runDummyTests.sh b/tools/github/runDummyTests.sh
+new file mode 100755
+index 00000000..1e33153b
+--- /dev/null
++++ b/tools/github/runDummyTests.sh
+@@ -0,0 +1,26 @@
++#!/usr/bin/env bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++set -e
++
++SCRIPTDIR=$(cd $(dirname "$0") && pwd)
++ROOTDIR="$SCRIPTDIR/../.."
++
++mkdir $ROOTDIR/logs
++echo "<h1>$(date)</h1>" >$ROOTDIR/logs/now.html
++exit 0
+\ No newline at end of file
+diff --git a/tools/github/runLeanSystemTests.sh b/tools/github/runLeanSystemTests.sh
+new file mode 100755
+index 00000000..372fbc1e
+--- /dev/null
++++ b/tools/github/runLeanSystemTests.sh
+@@ -0,0 +1,36 @@
++#!/usr/bin/env bash
++
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++set -e
++
++SCRIPTDIR=$(cd $(dirname "$0") && pwd)
++ROOTDIR="$SCRIPTDIR/../.."
++
++cd $ROOTDIR/tools/travis
++
++export ORG_GRADLE_PROJECT_testSetName="REQUIRE_LEAN_SYSTEM"
++export GRADLE_COVERAGE=true
++
++./setupPrereq.sh /ansible/files/runtimes-nodeonly.json
++
++./distDocker-lean.sh
++
++./setupLeanSystem.sh /ansible/files/runtimes-nodeonly.json
++
++./runTests.sh
+diff --git a/tools/github/runMultiRuntimeTests.sh b/tools/github/runMultiRuntimeTests.sh
+new file mode 100755
+index 00000000..e2de0c59
+--- /dev/null
++++ b/tools/github/runMultiRuntimeTests.sh
+@@ -0,0 +1,36 @@
++#!/usr/bin/env bash
++
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++set -e
++
++SCRIPTDIR=$(cd $(dirname "$0") && pwd)
++ROOTDIR="$SCRIPTDIR/../.."
++
++cd $ROOTDIR/tools/travis
++
++export ORG_GRADLE_PROJECT_testSetName="REQUIRE_MULTI_RUNTIME"
++export GRADLE_COVERAGE=true
++
++./setupPrereq.sh
++
++./distDocker.sh
++
++./setupSystem.sh
++
++./runTests.sh
+diff --git a/tools/github/runSchedulerTests.sh b/tools/github/runSchedulerTests.sh
+new file mode 100755
+index 00000000..000de808
+--- /dev/null
++++ b/tools/github/runSchedulerTests.sh
+@@ -0,0 +1,35 @@
++#!/usr/bin/env bash
++
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++set -e
++
++SCRIPTDIR=$(cd $(dirname "$0") && pwd)
++ROOTDIR="$SCRIPTDIR/../.."
++
++cd $ROOTDIR/tools/travis
++export ORG_GRADLE_PROJECT_testSetName="REQUIRE_SCHEDULER"
++export GRADLE_COVERAGE=true
++
++./setupPrereq.sh /ansible/files/runtimes-nodeonly.json
++
++./distDocker.sh
++
++./setupSystem.sh /ansible/files/runtimes-nodeonly.json
++
++./runTests.sh
+diff --git a/tools/github/runStandaloneTests.sh b/tools/github/runStandaloneTests.sh
+new file mode 100755
+index 00000000..ba10c5b4
+--- /dev/null
++++ b/tools/github/runStandaloneTests.sh
+@@ -0,0 +1,64 @@
++#!/usr/bin/env bash
++
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++set -e
++
++SCRIPTDIR=$(cd $(dirname "$0") && pwd)
++ROOTDIR="$SCRIPTDIR/../.."
++
++export ORG_GRADLE_PROJECT_testSetName="REQUIRE_STANDALONE"
++export GRADLE_COVERAGE=true
++
++cd $ROOTDIR/ansible
++$ANSIBLE_CMD setup.yml
++$ANSIBLE_CMD properties.yml -e manifest_file="/ansible/files/runtimes-nodeonly.json"
++$ANSIBLE_CMD downloadcli-github.yml
++
++# Install kubectl
++curl -Lo ./kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.1/bin/linux/amd64/kubectl
++chmod +x kubectl
++sudo cp kubectl /usr/local/bin/kubectl
++
++# Install kind
++curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v0.5.1/kind-linux-amd64
++chmod +x kind
++sudo cp kind /usr/local/bin/kind
++
++kind create cluster --wait 5m
++export KUBECONFIG="$(kind get kubeconfig-path)"
++kubectl config set-context --current --namespace=default
++
++# This is required because it is timed out to pull the image during the test.
++docker pull openwhisk/action-nodejs-v14:nightly
++docker pull openwhisk/dockerskeleton:nightly
++docker pull openwhisk/example:nightly
++docker pull openwhisk/apigateway:0.11.0
++
++cd $ROOTDIR
++TERM=dumb ./gradlew :core:standalone:build \
++  :core:monitoring:user-events:distDocker
++
++cd $ROOTDIR
++TERM=dumb ./gradlew :core:standalone:cleanTest \
++  :core:standalone:test \
++  :core:monitoring:user-events:reportTestScoverage
++
++# Run test in end as it publishes the coverage also
++cd $ROOTDIR/tools/travis
++./runTests.sh
+diff --git a/tools/github/runSystemTests.sh b/tools/github/runSystemTests.sh
+new file mode 100755
+index 00000000..8325cadd
+--- /dev/null
++++ b/tools/github/runSystemTests.sh
+@@ -0,0 +1,36 @@
++#!/usr/bin/env bash
++
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++set -e
++
++SCRIPTDIR=$(cd $(dirname "$0") && pwd)
++ROOTDIR="$SCRIPTDIR/../.."
++
++cd $ROOTDIR/tools/travis
++
++export ORG_GRADLE_PROJECT_testSetName="REQUIRE_SYSTEM"
++export GRADLE_COVERAGE=true
++
++./setupPrereq.sh /ansible/files/runtimes-nodeonly.json
++
++./distDocker.sh
++
++./setupSystem.sh /ansible/files/runtimes-nodeonly.json
++
++./runTests.sh
+diff --git a/tools/github/runTests.sh b/tools/github/runTests.sh
+new file mode 100755
+index 00000000..e2a7f7a4
+--- /dev/null
++++ b/tools/github/runTests.sh
+@@ -0,0 +1,32 @@
++#!/bin/bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++set -e
++
++# Build script for Travis-CI.
++
++SECONDS=0
++SCRIPTDIR=$(cd "$(dirname "$0")" && pwd)
++ROOTDIR="$SCRIPTDIR/../.."
++
++cd $ROOTDIR
++cat whisk.properties
++TERM=dumb ./gradlew :tests:testCoverageLean :tests:reportCoverage :tests:testSwaggerCodegen
++
++bash <(curl -s https://codecov.io/bash)
++echo "Time taken for ${0##*/} is $SECONDS secs"
+diff --git a/tools/github/runUnitTests.sh b/tools/github/runUnitTests.sh
+new file mode 100755
+index 00000000..b10418c9
+--- /dev/null
++++ b/tools/github/runUnitTests.sh
+@@ -0,0 +1,34 @@
++#!/usr/bin/env bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++set -e
++
++SCRIPTDIR=$(cd $(dirname "$0") && pwd)
++ROOTDIR="$SCRIPTDIR/../.."
++
++cd $ROOTDIR/tools/travis
++export TESTCONTAINERS_RYUK_DISABLED="true"
++export ORG_GRADLE_PROJECT_testSetName="REQUIRE_ONLY_DB"
++
++./setupPrereq.sh
++
++cat "$ROOTDIR/tests/src/test/resources/application.conf"
++
++./distDocker.sh
++
++./runTests.sh
+diff --git a/tools/github/s3-upload.sh b/tools/github/s3-upload.sh
+new file mode 100755
+index 00000000..6918f285
+--- /dev/null
++++ b/tools/github/s3-upload.sh
+@@ -0,0 +1,57 @@
++#!/bin/bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++# check variables
++for i in S3_LOG_BUCKET AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
++do
++  if test -z "${!i}"
++  then echo "Please set $i" ; exit 1
++  fi
++done
++
++if [[ -z "$1" ]] || [[ -z "$2" ]]
++then echo "usage: <source-dir> <target-path>" ; exit 1
++fi
++
++FROM="$1"
++TO="$2"
++
++BROWSER="https://raw.githubusercontent.com/qoomon/aws-s3-bucket-browser/master/index.html"
++BUCKET_URL="https://$S3_LOG_BUCKET.s3.$AWS_REGION.amazonaws.com/"
++
++# install rclone
++if ! which rclone
++then curl https://rclone.org/install.sh | sudo bash
++fi
++
++RCLONE="rclone --config /dev/null \
++  --s3-provider AWS \
++  --s3-region $AWS_REGION \
++  --s3-acl public-read \
++  --s3-access-key-id  $AWS_ACCESS_KEY_ID \
++  --s3-secret-access-key $AWS_SECRET_ACCESS_KEY"
++
++curl -s "$BROWSER" |\
++  sed -e 's!bucketUrl: undefined!bucketUrl: "'$BUCKET_URL'"!' |\
++  $RCLONE rcat ":s3:$S3_LOG_BUCKET/index.html"
++
++$RCLONE copyto "$FROM" ":s3:$S3_LOG_BUCKET/$TO/"
++echo "logurl=${BUCKET_URL}index.html#$TO" >>"${GITHUB_OUTPUT:-/dev/stdout}"
++
++
++
+diff --git a/tools/github/scan.sh b/tools/github/scan.sh
+new file mode 100755
+index 00000000..42b3fd57
+--- /dev/null
++++ b/tools/github/scan.sh
+@@ -0,0 +1,52 @@
++#!/bin/bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++set -e
++
++# Build script for Travis-CI.
++SECONDS=0
++SCRIPTDIR=$(cd $(dirname "$0") && pwd)
++ROOTDIR="$SCRIPTDIR/../.."
++HOMEDIR="$SCRIPTDIR/../../../"
++UTILDIR="$HOMEDIR/openwhisk-utilities/"
++
++cd $ROOTDIR
++./tools/github/flake8.sh  # Check Python files for style and stop the build on syntax errors
++
++# clone the openwhisk utilities repo.
++cd $HOMEDIR
++git clone https://github.com/apache/openwhisk-utilities.git
++
++# run the scancode util. against project source code starting at its root
++cd $UTILDIR
++scancode/scanCode.py --config scancode/ASF-Release.cfg $ROOTDIR
++
++# run scalafmt checks
++cd $ROOTDIR
++TERM=dumb ./gradlew checkScalafmtAll
++
++# lint tests to all be actually runnable
++MISSING_TESTS=$(grep -rL "RunWith" --include="*Tests.scala" tests || true)
++if [ -n "$MISSING_TESTS" ]
++then
++  echo "The following tests are missing the 'RunWith' annotation"
++  echo $MISSING_TESTS
++  exit 1
++fi
++
++echo "Time taken for ${0##*/} is $SECONDS secs"
+diff --git a/tools/github/setup-docker.py b/tools/github/setup-docker.py
+new file mode 100755
+index 00000000..525e6f44
+--- /dev/null
++++ b/tools/github/setup-docker.py
+@@ -0,0 +1,78 @@
++#!/usr/bin/env python
++"""Executable Python script for setting up docker daemon.
++
++Add docker daemon configuration options in /etc/docker/daemon.json
++
++  Run this script as:
++  $python setup-docker.py
++
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++"""
++
++from __future__ import print_function
++
++import json
++import traceback
++
++DOCKER_DAEMON_FILE = "/etc/docker/daemon.json"
++
++# Read the file.
++
++DOCKER_OPTS = {
++    "hosts": [
++        "tcp://0.0.0.0:4243",
++        "unix:///var/run/docker.sock"
++    ],
++    "storage-driver": "overlay",
++    "userns-remap": "default"
++}
++
++
++def get_daemon_content():
++    data = {}
++    with open(DOCKER_DAEMON_FILE) as json_file:
++        data = json.load(json_file)
++    return data
++
++
++def add_content(data):
++    for config in DOCKER_OPTS.items():
++        # config will be a tuple of key, value
++        # ('hosts', ['tcp://0.0.0.0:4243', 'unix:///var/run/docker.sock'])
++        key, value = config
++        data[key] = value
++    return data
++
++
++def write_to_daemon_conf(data):
++    try:
++        with open(DOCKER_DAEMON_FILE, 'w') as fp:
++            json.dump(data, fp)
++    except Exception as e:
++        print("Failed to write to daemon file")
++        print(e)
++        traceback.print_exc()
++
++
++if __name__ == "__main__":
++    current_data = get_daemon_content()
++    print(current_data)
++    updated_data = add_content(current_data)
++    print(updated_data)
++    write_to_daemon_conf(updated_data)
++    print("Successfully Configured Docker daemon.json")
+diff --git a/tools/github/setup.sh b/tools/github/setup.sh
+new file mode 100755
+index 00000000..59151292
+--- /dev/null
++++ b/tools/github/setup.sh
+@@ -0,0 +1,61 @@
++#!/bin/bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++if [[ $TEST_SUITE =~ Dummy ]]
++then echo skiping setup ; exit 0
++fi
++
++# retries a command for five times and exits with the non-zero exit if even after
++# the retries the command did not succeed.
++function retry() {
++  local exitcode=0
++  for i in {1..5};
++  do
++    exitcode=0
++    "$@" && break || exitcode=$? && echo "$i. attempt failed. Will retry $((5-i)) more times!" && sleep 1;
++  done
++  if [ $exitcode -ne 0 ]; then
++    exit $exitcode
++  fi
++}
++
++# Python
++python -m pip install --user couchdb
++
++# Ansible (warning you need jinja < 3.1 with this version)
++python -m pip install --user 'jinja2<3.1' ansible==2.8.18
++
++# Azure CosmosDB
++python -m pip install --user pydocumentdb
++
++# Support the revises log upload script
++python -m pip install --user humanize requests
++
++# Scan code before compiling the code
++tools/github/scan.sh
++
++# Preload alpine 3.5 to avoid issues with depending images
++retry docker pull alpine:3.5
++
++# Basic check that all code compiles and depdendencies are downloaded correctly.
++# Compiling the tests will compile all components as well.
++#
++# Downloads the gradle wrapper, dependencies and tries to compile the code.
++# Retried 5 times in case there are network hiccups.
++TERM=dumb retry ./gradlew :tests:compileTestScala
++
+diff --git a/tools/github/setupLeanSystem.sh b/tools/github/setupLeanSystem.sh
+new file mode 100755
+index 00000000..89568b21
+--- /dev/null
++++ b/tools/github/setupLeanSystem.sh
+@@ -0,0 +1,33 @@
++#!/bin/bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++set -e
++
++# Build script for Travis-CI.
++SECONDS=0
++SCRIPTDIR=$(cd $(dirname "$0") && pwd)
++ROOTDIR="$SCRIPTDIR/../.."
++RUNTIMES_MANIFEST=${1:-"/ansible/files/runtimes.json"}
++
++cd $ROOTDIR/ansible
++
++$ANSIBLE_CMD openwhisk.yml -e manifest_file="$RUNTIMES_MANIFEST" -e lean=true
++$ANSIBLE_CMD apigateway.yml
++$ANSIBLE_CMD routemgmt.yml
++
++echo "Time taken for ${0##*/} is $SECONDS secs"
+diff --git a/tools/github/setupPrereq.sh b/tools/github/setupPrereq.sh
+new file mode 100755
+index 00000000..264fc3da
+--- /dev/null
++++ b/tools/github/setupPrereq.sh
+@@ -0,0 +1,38 @@
++#!/bin/bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++set -e
++
++# Build script for Travis-CI.
++SECONDS=0
++SCRIPTDIR=$(cd $(dirname "$0") && pwd)
++ROOTDIR="$SCRIPTDIR/../.."
++RUNTIMES_MANIFEST=${1:-"/ansible/files/runtimes.json"}
++
++cd $ROOTDIR/ansible
++
++$ANSIBLE_CMD setup.yml -e mode=HA
++$ANSIBLE_CMD prereq.yml
++$ANSIBLE_CMD couchdb.yml
++$ANSIBLE_CMD initdb.yml
++$ANSIBLE_CMD wipe.yml
++$ANSIBLE_CMD elasticsearch.yml
++$ANSIBLE_CMD etcd.yml
++
++$ANSIBLE_CMD properties.yml -e manifest_file="$RUNTIMES_MANIFEST"
++echo "Time taken for ${0##*/} is $SECONDS secs"
+diff --git a/tools/github/setupSystem.sh b/tools/github/setupSystem.sh
+new file mode 100755
+index 00000000..387d45c6
+--- /dev/null
++++ b/tools/github/setupSystem.sh
+@@ -0,0 +1,36 @@
++#!/bin/bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++set -e
++
++# Build script for Travis-CI.
++SECONDS=0
++SCRIPTDIR=$(cd $(dirname "$0") && pwd)
++ROOTDIR="$SCRIPTDIR/../.."
++RUNTIMES_MANIFEST=${1:-"/ansible/files/runtimes.json"}
++
++# This is required because it is timed out to pull the image during the test.
++docker pull openwhisk/example
++
++cd $ROOTDIR/ansible
++
++$ANSIBLE_CMD openwhisk.yml -e manifest_file="$RUNTIMES_MANIFEST" -e db_activation_backend=ElasticSearch
++$ANSIBLE_CMD apigateway.yml
++$ANSIBLE_CMD routemgmt.yml
++
++echo "Time taken for ${0##*/} is $SECONDS secs"
+diff --git a/tools/github/waitIfDebug.sh b/tools/github/waitIfDebug.sh
+new file mode 100755
+index 00000000..30f791b2
+--- /dev/null
++++ b/tools/github/waitIfDebug.sh
+@@ -0,0 +1,37 @@
++#!/bin/bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++if ! test -e .ngrok.log
++then exit 0
++fi
++echo "You have an hour to debug this build."
++echo "Do touch /tmp/continue to continue."
++echo "Do touch /tmp/abort to abort."
++
++EXIT=0
++for i in $(seq 1 60)
++do
++   if test -e /tmp/continue ; then EXIT=0 ; break ; fi
++   if test -e /tmp/abort ; then EXIT=1 ; break ; fi
++   echo "$i/60 still waiting..."
++   sleep 60
++done
++
++killall ngrok
++rm -f .ngrok.log /tmp/continue /tmp/abort
++exit $EXIT
+diff --git a/tools/github/writeOnSlack.sh b/tools/github/writeOnSlack.sh
+new file mode 100755
+index 00000000..da8f2a8f
+--- /dev/null
++++ b/tools/github/writeOnSlack.sh
+@@ -0,0 +1,28 @@
++#!/bin/bash
++#
++# Licensed to the Apache Software Foundation (ASF) under one or more
++# contributor license agreements.  See the NOTICE file distributed with
++# this work for additional information regarding copyright ownership.
++# The ASF licenses this file to You under the Apache License, Version 2.0
++# (the "License"); you may not use this file except in compliance with
++# the License.  You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++if test -z "$SLACK_WEBHOOK"
++then echo "Please create an incoming webhook for slack and set SLACK_WEBHOOK"
++     exit 0
++fi
++
++echo -n '{"text":' >/tmp/msg$$
++echo -n "$@" | jq -Rsa . >>/tmp/msg$$
++echo -n '}' >>/tmp/msg$$
++
++curl -X POST -H 'Content-type: application/json' --data "@/tmp/msg$$" "$SLACK_WEBHOOK"
+diff --git a/tools/github/writeToSlack.sh b/tools/github/writeToSlack.sh
+new file mode 100755
+index 00000000..9555219d
+--- /dev/null
++++ b/tools/github/writeToSlack.sh
+@@ -0,0 +1,12 @@
++#!/bin/bash
++
++if test -z "$SLACK_WEBHOOK"
++then echo "Please create an incoming webhook for slack and set SLACK_WEBHOOK"
++     exit 0
++fi
++
++echo -n '{"text":' >/tmp/msg$$
++echo -n "$@" | jq -Rsa . >>/tmp/msg$$
++echo -n '}' >>/tmp/msg$$
++
++curl -X POST -H 'Content-type: application/json' --data "@/tmp/msg$$" "$SLACK_WEBHOOK"
+\ No newline at end of file
+-- 
+2.34.1
+

@@ -45,9 +45,6 @@ replace '#NGROK_DEBUG' 'NGROK_DEBUG' .github/workflows/*.yaml
 grep JAVA .github/workflows/*.yaml
 replace 'JAVA_DISTRO: adopt-openj9' 'JAVA_DISTRO: corretto' .github/workflows/*.yaml
 
-
-
-
 *** Collect changes to standalone
 
 core/standalone/src/main/scala/org/apache/openwhisk/standalone/StandaloneDockerSupport.scala
