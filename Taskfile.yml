@@ -19,17 +19,78 @@
 version: '3'
 
 vars:
-  TEST: ""
   BASETAG: 0.3.0-morpheus
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null
   TIMESTAMP:
     sh: date +%y%m%d%H
   S: ""
+  T: ""
 
 tasks:
+
   setup: 
     silent: true
+
+  yaml: 
+    silent: true
+    cmds: 
+     - |-
+       A="{{.CLI_ARGS}}"
+       if test -z "$A"
+       then ls -1 *.yml | sed -e 's/.yml//' -e 's/^/- /'
+       echo "edit(@)" or run  with '"task yaml -- [@]<script>"'
+       elif test "${A:0:1}" = "@"
+       then code ${A:1}.yml roles/${A:1}/tasks/deploy.yml
+       else ansible-playbook -i environments/local -e docker_image_prefix=testing "$A".yml
+       fi
+    dir: openwhisk/ansible
+
+  init:
+    cmds:
+     - task: clean
+     - rm -Rvf ../openwhisk-utilities
+     - ./tools/github/setup.sh
+    dir: openwhisk
+
+  clean:
+   - docker ps -qa | xargs docker rm -f
+
+  tests:
+    silent: true
+    cmds: 
+     - |-
+       A="{{.CLI_ARGS}}"
+       if test -z "$A"
+       then ls tools/github/run* | sed -e 's!^.*run\(.*\)Tests.sh$!- \1!'
+       echo "edit(@)" or run  with '"task yaml -- [@]<script>"'
+       elif test "${A:0:1}" = "@"
+       then code tools/github/run${A:1}Tests.sh
+       else echo ./tools/github/run${A:1}Tests.sh
+       fi
+    dir: openwhisk
+ 
+  setups:
+    silent: true
+    cmds: 
+     - |-
+       A="{{.CLI_ARGS}}"
+       if test -z "$A"
+       then ls tools/travis/setup* | sed -e 's!^.*setup\(.*\)Tests.sh$!- \1!'
+       echo "edit(@)" or run  with '"task yaml -- [@]<script>"'
+       elif test "${A:0:1}" = "@"
+       then code tools/github/run${A:1}Tests.sh
+       else echo ./tools/github/run${A:1}Tests.sh
+       fi
+    dir: openwhisk
+ 
+  tar-actions:
+    cmds:
+     - rm -f actions.tar
+     - > 
+        tar cvf ../actions.tar 
+        .github/workflows tools/github
+    dir: openwhisk
 
   image-tag: 
     - git tag -d $(git tag) ; git tag -f {{.BASETAG}}.{{.TIMESTAMP}}{{.S}} ; git tag
@@ -39,40 +100,6 @@ tasks:
       git tag -f {{.BASETAG}}.{{.TIMESTAMP}}{{.S}}
       git tag
 
-  image-tag-and-push:
+  tag-and-push:
     - task: image-tag
     - cd openwhisk ; git push upstream --tags
-
-  
-
-  run-setup:
-    cmds:
-     - rm -Rvf ../openwhisk-utilities
-     - ./tools/github/setup.sh
-     - docker ps -qa | xargs docker rm -f
-    dir: openwhisk
-
-  run-test:
-    silent: true
-    cmds:
-    - |-
-      if test -z "{{.TEST}}" ; 
-      then ls tools/github/run* 
-      echo use TEST=x of Unit, System etc
-      else 
-      ./tools/github/run{{.TEST}}Tests.sh
-      fi
-    env:
-      TEST_SUITE: "{{.TEST}}"
-    dir: openwhisk
-
-  actions:
-    cmds:
-     - rm -f actions.tar
-     - > 
-        tar cvf ../actions.tar 
-        .github/workflows tools/github
-        tests/src/test/scala/org/apache/openwhisk/core/containerpool/v2/test/ActivationClientProxyTests.scala
-    dir: openwhisk
-
-
