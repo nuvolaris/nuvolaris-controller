@@ -15,14 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 #
+_*
 attic/
 .vscode/
-.*-version
-kubeconfig
-*.kubeconfig
-kustomization.yaml
-nodesource_setup.sh
-wsk
 .metals/
 docker/
 enterprise/controller/lib/
@@ -32,6 +27,5 @@ enterprise/invoker/bin/
 standalone/lib/
 export/
 results/
-*.tar
-openwhisk-master/
+openwhisk-*/
 .env

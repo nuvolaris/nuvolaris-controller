@@ -21,22 +21,16 @@ header:
     copyright-owner: Apache Software Foundation
 
   paths-ignore:
-    - 'nuvolaris-controller.code-workspace'
-    - 'nodesource_setup.sh'
-    - '**/LICENSE'
-    - '**/package-lock.json'
-    - '**/.*-version'
-    - '**/*.json'
-    - '**/node_modules/**'
-    - '**/build/**'
-    - '**/target/**'
-    - '**/openwhisk/**'
-    - '**/openwhisk-*/**'
-    - '**/parthenon/**'
-    - '**/go.sum'
-    - '**/auth.guest'
-    - '**/auth.whisk.system'
-    - '**/results/**'
+    - 'LICENSE'
+    - 'openwhisk/**'
+    - 'openwhisk-*/**'
+    - '**/*.patch'
+    - 'launch.json'
+    - 'go.sum'
+    - '**/auth.*'
+    - '_*'
+    - '.env.dist'
+
  
 dependency:
   files:
