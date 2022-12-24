@@ -15,91 +15,132 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-
 version: '3'
+
+dotenv: 
+  - .env
 
 vars:
   BASETAG: 0.3.0-morpheus
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null
-  TIMESTAMP:
-    sh: date +%y%m%d%H
-  S: ""
-  T: ""
+  CONTROLLER: ghcr.io/nuvolaris/openwhisk-controller
+  INVOKER: ghcr.io/nuvolaris/openwhisk-invoker
+  STANDALONE: ghcr.io/nuvolaris/openwhisk-standalone
+  ACT: "undefined"
 
 tasks:
-
+  default:
+    - task --list-all
   setup: 
     silent: true
 
-  yaml: 
-    silent: true
-    cmds: 
-     - |-
-       A="{{.CLI_ARGS}}"
-       if test -z "$A"
-       then ls -1 *.yml | sed -e 's/.yml//' -e 's/^/- /'
-       echo "edit(@)" or run  with '"task yaml -- [@]<script>"'
-       elif test "${A:0:1}" = "@"
-       then code ${A:1}.yml roles/${A:1}/tasks/deploy.yml
-       else ansible-playbook -i environments/local -e docker_image_prefix=testing "$A".yml
-       fi
-    dir: openwhisk/ansible
+  image-tag: git tag -d $(git tag) ; git tag -f {{.BASETAG}}.$(date +%y%m%d%H) ; git tag
 
-  init:
+  show-tag:
+    silent: true
     cmds:
-     - task: clean
-     - rm -Rvf ../openwhisk-utilities
-     - ./tools/github/setup.sh
+    - echo "controller:" ${MY_CONTROLLER_IMAGE:-{{.CONTROLLER}}}
+    - echo "invoker:" ${MY_INVOKER_IMAGE:-{{.INVOKER}}}
+    - echo "standalone:" ${MY_STANDALONE_IMAGE:-{{.STANDALONE}}}
+
+  compile:controller:
     dir: openwhisk
+    cmds:
+      - ./gradlew  :core:controller:distTar
+    status:
+      - test -f core/controller/build/distributions/controller.tar
+
+  compile:invoker:
+    dir: openwhisk
+    cmds:
+      - ./gradlew  :core:invoker:distTar
+    status:
+      - test -f core/invoker/build/distributions/invoker.tar
+
+  compile:standalone:
+    dir: openwhisk
+    cmds:
+      - ./gradlew :core:standalone:build
+      - mkdir -p ../standalone/lib
+      - cp bin/openwhisk-standalone.jar ../standalone/lib/
+    status:
+      - test -f ../standalone/lib/openwhisk-standalone.jar
 
   clean:
-   - docker ps -qa | xargs docker rm -f
+    - rm standalone/lib/openwhisk-standalone.jar
+    - rm openwhisk/core/invoker/build/distributions/invoker.tar
+    - rm openwhisk/core/controller/build/distributions/controller.tar
 
-  tests:
+  compile:
+    - task: compile:controller
+    - task: compile:invoker
+    - task: compile:standalone
+
+  # this requires the IMG and DIR parameters to be invoked
+  docker-build:
     silent: true
-    cmds: 
-     - |-
-       A="{{.CLI_ARGS}}"
-       if test -z "$A"
-       then ls tools/github/run* | sed -e 's!^.*run\(.*\)Tests.sh$!- \1!'
-       echo "edit(@)" or run  with '"task yaml -- [@]<script>"'
-       elif test "${A:0:1}" = "@"
-       then code tools/github/run${A:1}Tests.sh
-       else echo ./tools/github/run${A:1}Tests.sh
-       fi
-    dir: openwhisk
- 
-  setups:
-    silent: true
-    cmds: 
-     - |-
-       A="{{.CLI_ARGS}}"
-       if test -z "$A"
-       then ls tools/travis/setup* | sed -e 's!^.*setup\(.*\)Tests.sh$!- \1!'
-       echo "edit(@)" or run  with '"task yaml -- [@]<script>"'
-       elif test "${A:0:1}" = "@"
-       then code tools/github/run${A:1}Tests.sh
-       else echo ./tools/github/run${A:1}Tests.sh
-       fi
-    dir: openwhisk
- 
-  tar-actions:
     cmds:
-     - rm -f actions.tar
-     - > 
-        tar cvf ../actions.tar 
-        .github/workflows tools/github
-    dir: openwhisk
+    - |-
+      case "{{.ACT}}" in
+      (build) docker build {{.DIR}} -t {{.IMG}} ;;
+      (build-push) docker build {{.DIR}} -t {{.IMG}} ; docker push {{.IMG}} ;;
+      (buildx-push) docker buildx build --platform linux/amd64,linux/arm64 -t {{.IMG}} {{.DIR}} --push ;;
+      (*) echo action undefined
+      esac
 
-  image-tag: 
-    - git tag -d $(git tag) ; git tag -f {{.BASETAG}}.{{.TIMESTAMP}}{{.S}} ; git tag
-    - |
-      cd openwhisk
-      git tag | xargs git tag -d
-      git tag -f {{.BASETAG}}.{{.TIMESTAMP}}{{.S}}
-      git tag
+  build:controller:
+    deps:
+    - compile:controller
+    cmds:
+      - task: docker-build
+        vars:
+          DIR: openwhisk/core/controller
+          IMG: "${MY_CONTROLLER_IMAGE:-{{.CONTROLLER_IMAGE}}}:{{.TAG}}"
+          ACT: '{{.ACT | or "build"}}'
+ 
+  build:invoker:
+    deps:
+    - compile:invoker
+    cmds:
+      - task: docker-build
+        vars:
+          DIR: openwhisk/core/invoker
+          IMG: "${MY_INVOKER_IMAGE:-{{.INVOKER_IMAGE}}}:{{.TAG}}"
+          ACT: '{{.ACT | or "build"}}'
 
-  tag-and-push:
-    - task: image-tag
-    - cd openwhisk ; git push upstream --tags
+  build:standalone:
+    deps:
+    - compile:standalone
+    cmds:
+      - task: docker-build
+        vars:
+          DIR: standalone
+          IMG: "${MY_STANDALONE_IMAGE:-{{.STANDALONE_IMAGE}}}:{{.TAG}}"
+          ACT: '{{.ACT | or "build"}}'
+  
+  build-and-push:
+    cmds:
+    - task: build:controller
+      vars:
+         ACT: "build-push"      
+    - task: build:invoker
+      vars:
+         ACT: "build-push"
+    - task: build:standalone
+      vars:
+         ACT: "build-push"
+
+  buildx-and-push:
+    - task: build:controller
+      vars:
+         ACT: "buildx-push"      
+    - task: build:invoker
+      vars:
+         ACT: "buildx-push"
+    - task: build:standalone
+      vars:
+         ACT: "buildx-push"
+
+
+
