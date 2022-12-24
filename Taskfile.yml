@@ -24,9 +24,9 @@ vars:
   BASETAG: 0.3.0-morpheus
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null
-  CONTROLLER: ghcr.io/nuvolaris/openwhisk-controller
-  INVOKER: ghcr.io/nuvolaris/openwhisk-invoker
-  STANDALONE: ghcr.io/nuvolaris/openwhisk-standalone
+  CONTROLLER_IMAGE: ghcr.io/nuvolaris/openwhisk-controller
+  INVOKER_IMAGE: ghcr.io/nuvolaris/openwhisk-invoker
+  STANDALONE_IMAGE: ghcr.io/nuvolaris/openwhisk-standalone
   ACT: "undefined"
 
 tasks:
