@@ -39,9 +39,9 @@ tasks:
     - git tag -f {{.BASETAG}}.$(date +%y%m%d%H) 
     - git tag
 
-  re-tag: 
+  re-tag:
     - git tag -d {{.TAG}}
-    - git push --delete upstream {{.TAG}}
+    - git push --delete upstream {{.TAG}} || true     
     - task: image-tag
 
  
