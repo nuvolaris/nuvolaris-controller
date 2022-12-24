@@ -35,8 +35,16 @@ tasks:
   setup: 
     silent: true
 
-  image-tag: git tag -d $(git tag) ; git tag -f {{.BASETAG}}.$(date +%y%m%d%H) ; git tag
+  image-tag: 
+    - git tag -f {{.BASETAG}}.$(date +%y%m%d%H) 
+    - git tag
 
+  re-tag: 
+    - git tag -d {{.TAG}}
+    - git push --delete upstream {{.TAG}}
+    - task: image-tag
+
+ 
   show-tag:
     silent: true
     cmds:
