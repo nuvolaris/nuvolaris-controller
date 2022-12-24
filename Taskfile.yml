@@ -23,7 +23,7 @@ dotenv:
 vars:
   BASETAG: 0.3.0-morpheus
   TAG:
-    sh: git describe --tags --abbrev=0 2>/dev/null || "undefined"
+    sh: git describe --tags --abbrev=0 2>/dev/null || echo "undefined"
   CONTROLLER_IMAGE: ghcr.io/nuvolaris/openwhisk-controller
   INVOKER_IMAGE: ghcr.io/nuvolaris/openwhisk-invoker
   STANDALONE_IMAGE: ghcr.io/nuvolaris/openwhisk-standalone
