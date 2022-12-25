@@ -32,6 +32,7 @@ env:
   NGROK_DEBUG: ${{ inputs.enable_ngrok_debug }}
   NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
   NGROK_PASSWORD: ${{ secrets.NGROK_PASSWORD }}
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
 jobs:
   build:
