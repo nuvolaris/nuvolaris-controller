@@ -23,7 +23,7 @@ dotenv:
 vars:
   BASETAG: 0.3.0-morpheus
   TAG:
-    sh: git describe --tags --abbrev=0 2>/dev/null || echo "undefined"
+    sh: git describe --tags --abbrev=0 2>/dev/null || git rev-parse --short HEAD
   CONTROLLER_IMAGE: ghcr.io/nuvolaris/openwhisk-controller
   INVOKER_IMAGE: ghcr.io/nuvolaris/openwhisk-invoker
   STANDALONE_IMAGE: ghcr.io/nuvolaris/openwhisk-standalone
@@ -87,6 +87,7 @@ tasks:
     silent: true
     cmds:
     - |-
+      echo "***" {{.ACT}} for {{.IMG}} in {{.DIR}}
       case "{{.ACT}}" in
       (build) docker build {{.DIR}} -t {{.IMG}} ;;
       (buildx) docker buildx build --platform linux/amd64,linux/arm64 -t {{.IMG}} {{.DIR}} ;;
