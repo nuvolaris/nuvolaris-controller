@@ -28,6 +28,7 @@ vars:
   INVOKER_IMAGE: ghcr.io/nuvolaris/openwhisk-invoker
   STANDALONE_IMAGE: ghcr.io/nuvolaris/openwhisk-standalone
   ACT: "undefined"
+  S: ""
 
 tasks:
   default:
@@ -36,20 +37,17 @@ tasks:
     silent: true
 
   image-tag: 
-    - git tag -f {{.BASETAG}}.$(date +%y%m%d%H) 
-    - git tag
+    - git tag -d $(git tag)
+    - git tag -f {{.BASETAG}}.$(date +%y%m%d%H){{.S}}
+    - task show
 
-  re-tag:
-    - git tag -d {{.TAG}}
-    - git push --delete upstream {{.TAG}} || true     
-    - task: image-tag
-
-  show-tag:
+  show:
     silent: true
     cmds:
-    - echo "controller:" ${MY_CONTROLLER_IMAGE:-{{.CONTROLLER}}}
-    - echo "invoker:" ${MY_INVOKER_IMAGE:-{{.INVOKER}}}
-    - echo "standalone:" ${MY_STANDALONE_IMAGE:-{{.STANDALONE}}}
+      - echo "tag:" {{.TAG}}
+      - echo "controller:" ${MY_CONTROLLER_IMAGE:-{{.CONTROLLER}}}:{{.TAG}}
+      - echo "invoker:" ${MY_INVOKER_IMAGE:-{{.INVOKER}}}:{{.TAG}}
+      - echo "standalone:" ${MY_STANDALONE_IMAGE:-{{.STANDALONE}}}:{{.TAG}}
 
   compile:controller:
     dir: openwhisk
@@ -124,6 +122,7 @@ tasks:
           DIR: openwhisk/core/invoker
           IMG: "${MY_INVOKER_IMAGE:-{{.INVOKER_IMAGE}}}:{{.TAG}}"
           ACT: '{{.ACT | or "build"}}'
+  
 
   build:standalone:
     deps:
@@ -137,6 +136,9 @@ tasks:
   
   build-and-push:
     cmds:
+    - task: build:scala
+      vars:
+         ACT: "build" 
     - task: build:controller
       vars:
          ACT: "build-push"      
@@ -147,7 +149,15 @@ tasks:
       vars:
          ACT: "build-push"
 
+  buildx-prepare:
+    - docker buildx install
+    - docker buildx create --name nuvolaris
+
+
   buildx-and-push:
+    - task: build:scala
+      vars:
+         ACT: "buildx" 
     - task: build:controller
       vars:
          ACT: "buildx-push"      
@@ -157,6 +167,3 @@ tasks:
     - task: build:standalone
       vars:
          ACT: "buildx-push"
-
-
-
