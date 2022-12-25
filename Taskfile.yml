@@ -44,7 +44,6 @@ tasks:
     - git push --delete upstream {{.TAG}} || true     
     - task: image-tag
 
- 
   show-tag:
     silent: true
     cmds:
@@ -92,10 +91,19 @@ tasks:
     - |-
       case "{{.ACT}}" in
       (build) docker build {{.DIR}} -t {{.IMG}} ;;
+      (buildx) docker buildx build --platform linux/amd64,linux/arm64 -t {{.IMG}} {{.DIR}} ;;
       (build-push) docker build {{.DIR}} -t {{.IMG}} ; docker push {{.IMG}} ;;
       (buildx-push) docker buildx build --platform linux/amd64,linux/arm64 -t {{.IMG}} {{.DIR}} --push ;;
       (*) echo action undefined
       esac
+
+  build:scala:
+    cmds:
+      - task: docker-build
+        vars:
+          DIR: openwhisk/common/scala
+          IMG: "scala"
+          ACT: '{{.ACT | or "build"}}'
 
   build:controller:
     deps:
