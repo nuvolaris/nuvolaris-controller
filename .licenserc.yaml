@@ -31,6 +31,7 @@ header:
     - '**/auth.*'
     - '_*'
     - '.env.dist'
+    - '.tag'
 
  
 dependency:
