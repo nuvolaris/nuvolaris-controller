@@ -29,4 +29,4 @@ export/
 results/
 openwhisk-*/
 .env
-.git-hooks/pre-commit
+.git-hooks/
