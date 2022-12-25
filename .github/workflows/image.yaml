@@ -19,7 +19,7 @@ name: Build Images
 on: 
   push:
     tags:
-      - '[0-9]*'
+      - '*'
     branches-ignore: '*'
   workflow_dispatch:
     inputs:
@@ -57,12 +57,18 @@ jobs:
         uses: docker/setup-buildx-action@v1
       - name: Setup task
         run: bash .github/cisetup.sh
-      - name: Build and push
-        run: |-
-             bash .github/cisetup.sh
-             task buildx-and-push
+      - name: Setup
+        run: bash .github/tools/setup.sh
+      - id: build
+        name: Build and Push Images
+        run: task buildx-and-push
+        continue-on-error: true
       - name: Debug Action (if requested)
-        run:  ./github/debugAction.sh
+        run:  bash .github/tools/debugAction.sh
       - name: Wait for Debug (if requested)
-        run: ./github/waitIfDebug.sh
+        run: bash .github/tools/waitIfDebug.sh
+      - name: Results
+        run: test "${{ steps.build.outcome }}" ==  "success"
+      
+      
  
