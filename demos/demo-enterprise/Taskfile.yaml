@@ -35,14 +35,10 @@ tasks:
      - kubectl {{.CMD}} -f redpanda
 
   kafka:
-    - kubectl -n nuvolaris apply -f kafka/strimzi-operator.yaml
-    - kubectl -n nuvolaris wait po -l name=strimzi-cluster-operator --for=condition=Ready --timeout=300s
-    - kubectl -n nuvolaris apply -f kafka/cluster-single.yaml
-    - kubectl -n nuvolaris wait kafka/nuv --for=condition=Ready --timeout=300s 
-
+    - kubectl -n nuvolaris apply -f kafka
+    
   kafka:delete:
-    - kubectl -n nuvolaris delete -f kafka/cluster-single.yaml
-    - kubectl -n nuvolaris delete -f kafka/strimzi-operator.yaml
+    - kubectl -n nuvolaris delete -f kafka
 
   kafka:test:
     - kubectl -n nuvolaris apply -f kafka/kcat.yaml

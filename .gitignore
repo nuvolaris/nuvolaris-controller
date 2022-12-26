@@ -31,3 +31,5 @@ openwhisk-*/
 .env
 .git-hooks/
 .tag
+*.tar
+playground.*

@@ -1,0 +1,71 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zookeeper
+  namespace: nuvolaris
+  labels:
+    name: zookeeper
+    app: zookeeper
+spec:
+  serviceName: zookeeper
+  podManagementPolicy: "Parallel"
+  replicas: 1
+  selector:
+    matchLabels:
+      name: zookeeper
+  template:
+    metadata:
+      labels:
+        name: zookeeper
+        app: zookeeper
+    spec:
+      restartPolicy: "Always"
+
+      volumes:
+        - name: zk-config
+          configMap:
+            name: zookeeper
+        - name: "zookeeper-pvc-data"
+          persistentVolumeClaim:
+            claimName: "zookeeper-pvc-data"
+        - name: "zookeeper-pvc-datalog"
+          persistentVolumeClaim:
+            claimName: "zookeeper-pvc-datalog"
+      
+      containers:
+      - name: zookeeper
+        image: "zookeeper:3.4"
+        imagePullPolicy: "IfNotPresent"
+        command: ["/bin/bash", "-c", "hostname -s | awk -F '-' '{print $NF}'> /data/myid; cat /data/myid; cat /conf/zoo.cfg; zkServer.sh start-foreground"]
+        ports:
+        - name: zookeeper
+          containerPort: 2181
+        - name: server
+          containerPort: 2888
+        - name: leader-election
+          containerPort: 3888
+
+        livenessProbe:
+          tcpSocket:
+            port: 2181
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 1
+        readinessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "echo ruok | nc -w 1 localhost 2181 | grep imok"
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 1
+        volumeMounts:
+        - mountPath: /conf
+          name: zk-config
+        - mountPath: /data
+          name: "zookeeper-pvc-data"
+        - mountPath: /datalog
+          name: "zookeeper-pvc-datalog"
+---

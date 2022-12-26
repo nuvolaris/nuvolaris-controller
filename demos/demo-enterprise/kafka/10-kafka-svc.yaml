@@ -1,0 +1,17 @@
+---
+# Source: openwhisk/templates/kafka-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  labels:
+    name: kafka
+    app: kafka
+spec:
+  selector:
+    name: kafka
+  clusterIP: None
+  ports:
+  - name: broker
+    port: 9092
+

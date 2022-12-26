@@ -1,0 +1,42 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: zookeeper-data
+  namespace: nuvolaris
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 1Gi
+  hostPath:
+    path: /zookeeper/data
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: zookeeper-datalog
+  namespace: nuvolaris
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 1Gi
+  hostPath:
+    path: /zookeeper/log
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: kafka-data
+  namespace: nuvolaris
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 1Gi
+  hostPath:
+    path: /kafka

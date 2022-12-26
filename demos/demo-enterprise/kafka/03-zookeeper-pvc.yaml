@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: "zookeeper-pvc-data"
+  namespace: nuvolaris
+  labels:
+    app: zookeeper
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 256Mi
+  volumeName: zookeeper-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: "zookeeper-pvc-datalog"
+  namespace: nuvolaris
+  labels:
+    app: zookeeper
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 256Mi
+  volumeName: zookeeper-datalog
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: "kafka-pvc-data"
+  namespace: nuvolaris
+  labels:
+    app: kafka
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 256Mi
+  volumeName: kafka-data

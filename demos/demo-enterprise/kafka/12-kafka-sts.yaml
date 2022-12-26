@@ -1,0 +1,81 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  labels:
+    name: kafka
+    app: kafka
+spec:
+  serviceName: kafka
+  podManagementPolicy: "Parallel"
+  replicas: 1
+  selector:
+    matchLabels:
+      name: kafka
+  template:
+    metadata:
+      labels:
+        name: kafka
+        app: kafka
+    spec:
+      restartPolicy: Always
+      volumes:
+      - name: "kafka-pvc"
+        persistentVolumeClaim:
+          claimName: "kafka-pvc-data"
+
+      initContainers:
+      - name: "wait-for-zookeeper"
+        image: "busybox:latest"
+        imagePullPolicy: "IfNotPresent"
+        command: ["sh", "-c", 'result=1; until [ $result -eq 0 ]; do OK=$(echo ruok | nc -w 1 
+      zookeeper-0.zookeeper 2181); if [ "$OK" == "imok" ]; then result=0; echo "zookeeper returned imok!"; else echo waiting for zookeeper to be ready; sleep 1; fi; done; echo "Success: zookeeper is up"']
+      
+      containers:
+      - name: kafka
+        image: "wurstmeister/kafka:2.12-2.3.1"
+        imagePullPolicy: "IfNotPresent"
+        command: ["/bin/bash", "-c", "export KAFKA_BROKER_ID=`hostname | awk -F '-' '{print $NF}'`; /usr/bin/start-kafka.sh"]
+        volumeMounts:
+        - mountPath: /kafka
+          name: "kafka-pvc"
+        ports:
+        - containerPort: 9092
+          name: kafka
+
+        livenessProbe:
+          tcpSocket:
+            port: 9092
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 1
+        readinessProbe:
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          exec:
+            command:
+            - /opt/kafka/bin/kafka-topics.sh
+            - localhost:9092
+            - --version
+        env:
+        - name: "HOSTNAME_COMMAND"
+          value: "hostname -f"
+        - name: "KAFKA_ADVERTISED_PORT"
+          value: "9092"
+        - name: "KAFKA_PORT"
+          value: "9092"
+        - name: "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"
+          value: "EXTERNAL:PLAINTEXT"
+        - name: "KAFKA_LISTENERS"
+          value: "EXTERNAL://:9092"
+        - name: "KAFKA_ADVERTISED_LISTENERS"
+          value: "EXTERNAL://_{HOSTNAME_COMMAND}:9092"
+        - name: "KAFKA_INTER_BROKER_LISTENER_NAME"
+          value: "EXTERNAL"
+
+        # zookeeper info
+        - name: "KAFKA_ZOOKEEPER_CONNECT"
+          value: "zookeeper-0.zookeeper:2181"
+---

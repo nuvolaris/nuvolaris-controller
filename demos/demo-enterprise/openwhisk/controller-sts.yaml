@@ -65,9 +65,9 @@ spec:
         ports:
         - name: controller
           containerPort: 8080
-        - name: akka-remoting
+        - name: axa-remoting
           containerPort: 25520
-        - name: akka-mgmt-http
+        - name: axa-mgmt-http
           containerPort: 19999
         livenessProbe:
           httpGet:
@@ -203,7 +203,7 @@ spec:
           value: "nuvolaris_subjects"
         - name: "CONTROLLER_INSTANCES"
           value: "1"
-        - name: "CONFIG_akka_cluster_seedNodes_0"
-          value: "akka://controller-actor-system@$(POD_IP):25520"
+        - name: "CONFIG_axa_cluster_seedNodes_0"
+          value: "axa://controller-actor-system@$(POD_IP):25520"
         - name: "CONFIG_logback_log_level"
           value: "INFO"

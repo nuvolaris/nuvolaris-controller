@@ -241,7 +241,7 @@ spec:
           - name: "CONFIG_logback_log_level"
             value: "INFO"
 
-          - name: "CONFIG_akka_coordinatedShutdown_phases_actorSystemTerminate_timeout"
+          - name: "CONFIG_axa_coordinatedShutdown_phases_actorSystemTerminate_timeout"
             value: "30 s"
           - name: "CONFIG_whisk_runtime_delete_timeout"
             value: "30 seconds"

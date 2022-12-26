@@ -25,8 +25,8 @@ tasks:
   export:
     cmds:
     - | 
-      if test -z "{{.FILE}}"
-      then ls "{{.TPL}}/templates" ; echo select with "FILE=<file>" no .yaml
+      if test -z "{{.F}}"
+      then ls "{{.TPL}}/templates" ; echo select with "F=<file>" no .yaml
       else helm template nuvolaris {{.TPL}} \
       -n nuvolaris -f openwhisk-deploy-kube/deploy/kind/mycluster.yaml \
       -s  templates/{{.F}}.yaml | tee export/{{.F}}.yaml
