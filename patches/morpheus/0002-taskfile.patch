@@ -1,0 +1,125 @@
+From 1b0a2022e851c461d015eb312f1218d6d3dafde4 Mon Sep 17 00:00:00 2001
+From: Michele Sciabarra <michele@sciabarra.com>
+Date: Sat, 24 Dec 2022 19:59:13 +0000
+Subject: [PATCH 2/5] taskfile
+
+---
+ Taskfile.yml | 106 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 106 insertions(+)
+ create mode 100644 Taskfile.yml
+
+diff --git a/Taskfile.yml b/Taskfile.yml
+new file mode 100644
+index 00000000..8394a678
+--- /dev/null
++++ b/Taskfile.yml
+@@ -0,0 +1,106 @@
++# Licensed to the Apache Software Foundation (ASF) under one
++# or more contributor license agreements.  See the NOTICE file
++# distributed with this work for additional information
++# regarding copyright ownership.  The ASF licenses this file
++# to you under the Apache License, Version 2.0 (the
++# "License"); you may not use this file except in compliance
++# with the License.  You may obtain a copy of the License at
++#
++#   http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing,
++# software distributed under the License is distributed on an
++# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++# KIND, either express or implied.  See the License for the
++# specific language governing permissions and limitations
++# under the License.
++#
++version: '3'
++
++vars:
++  BASETAG: 0.3.0-morpheus
++  TAG:
++    sh: git describe --tags --abbrev=0 2>/dev/null || echo "no-tag"
++  TIMESTAMP:
++    sh: date +%y%m%d%H
++  S: ""
++  T: "all"
++
++tasks:
++  default: task --list-all
++  setup: {"silent": true}
++
++  yaml: 
++    silent: true
++    cmds: 
++     - |-
++       A="{{.CLI_ARGS}}"
++       if test -z "$A"
++       then ls -1 *.yml | sed -e 's/.yml//' -e 's/^/- /'
++       echo "edit(@)" or run  with '"task yaml -- [@]<script>"'
++       elif test "${A:0:1}" = "@"
++       then test -e ${A:1}.yml  && code ${A:1}.yml 
++            test -e roles/${A:1}/tasks/deploy.yml && code roles/${A:1}/tasks/deploy.yml
++       else ansible-playbook -i environments/local -e docker_image_prefix=testing "$A".yml
++       fi
++    dir: ansible
++
++  init:
++    cmds:
++     - task: clean
++     - rm -Rvf ../openwhisk-utilities
++     - ./tools/github/setup.sh
++
++  clean:
++   - docker ps -qa | xargs docker rm -f
++
++  tests:
++    silent: true
++    cmds: 
++     - |-
++       A="{{.CLI_ARGS}}"
++       if test -z "$A"
++       then ls tools/github/run* | sed -e 's!^.*run\(.*\)Tests.sh$!- \1!'
++       echo "edit(@)" or run  with '"task yaml -- [@]<script>"'
++       elif test "${A:0:1}" = "@"
++       then code tools/github/run${A:1}Tests.sh
++       else echo ./tools/github/run${A:1}Tests.sh
++       fi
++ 
++  setups:
++    silent: true
++    cmds: 
++     - |-
++       A="{{.CLI_ARGS}}"
++       if test -z "$A"
++       then ls tools/travis/setup* | sed -e 's!^.*setup\(..*\).sh$!- \1!'
++       echo "edit(@)" or run  with '"task setups -- [@]<script>"'
++       elif test "${A:0:1}" = "@"
++       then code tools/travis/setup${A:1}.sh
++       else echo ./tools/travis/setup${A:1}.sh
++       fi 
++
++  image-tag:
++    - cd ..; task image-tag ; git tag >.tag ; cd -
++    - git tag -d $(git tag)
++    - git tag $(cat ../.tag)-{{.T}}
++    - git tag
++
++  snap: 
++    silent: true
++    cmds:
++    - |-
++      TAG="{{.BASETAG}}.{{.TIMESTAMP}}{{.S}}-{{.T}}"
++      if test -n "{{.CLI_ARGS}}"
++      then git commit -m "{{.CLI_ARGS}}" -a
++      else
++      if [[ "$(git status -s | wc -l)" = "0" ]]
++      then 
++      git tag | xargs git tag -d
++      git tag -f $TAG
++      git push upstream --tags
++      else git status -s
++      echo commit with task snap -- message
++      echo push with task snap [T=test] [S=suffix]
++      fi
++      fi
+-- 
+2.34.1
+

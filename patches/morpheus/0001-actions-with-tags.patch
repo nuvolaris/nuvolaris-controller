@@ -1,0 +1,216 @@
+From 9a429bc14f5f844f4000ae25550fd55758ad3114 Mon Sep 17 00:00:00 2001
+From: Michele Sciabarra <michele@sciabarra.com>
+Date: Sat, 24 Dec 2022 19:58:37 +0000
+Subject: [PATCH 1/5] actions with tags
+
+---
+ .github/workflows/1-unit.yaml          | 8 ++++++--
+ .github/workflows/2-system.yaml        | 8 ++++++--
+ .github/workflows/3-multi-runtime.yaml | 9 +++++++--
+ .github/workflows/4-standalone.yaml    | 8 ++++++--
+ .github/workflows/5-scheduler.yaml     | 8 ++++++--
+ .github/workflows/6-performance.yaml   | 8 ++++++--
+ 6 files changed, 37 insertions(+), 12 deletions(-)
+
+diff --git a/.github/workflows/1-unit.yaml b/.github/workflows/1-unit.yaml
+index c9406125..27ce75f6 100644
+--- a/.github/workflows/1-unit.yaml
++++ b/.github/workflows/1-unit.yaml
+@@ -20,6 +20,10 @@ name: Unit Tests
+ on:
+   # build on push
+   push:
++    tags:
++     - '*unit*'
++     - '*all*'
++    branches-ignore: '*'
+   # build on pull requests
+   pull_request:
+ 
+@@ -46,7 +50,7 @@ env:
+ 
+   # github
+   GH_BUILD: ${{ github.event_name }}-${{ github.sha }}
+-  GH_BRANCH: ${{ github.head_ref || github.ref_name }} 
++  GH_BRANCH: ${{ github.head_ref || github.ref_name }}
+ 
+ jobs:
+   openwhisk:
+@@ -64,7 +68,7 @@ jobs:
+         name: Show results and Upload logs
+         run: ./tools/github/checkAndUploadLogs.sh ${{ env.TEST_SUITE }}
+       - name: Slack Notification
+-        run: > 
++        run: >
+              ./tools/github/writeOnSlack.sh
+              "[$TEST_SUITE]" ${{ steps.tests.outcome }} on ${GH_BUILD}
+              $'\nbranch:' $GH_BRANCH
+diff --git a/.github/workflows/2-system.yaml b/.github/workflows/2-system.yaml
+index 79c5ea6e..ceb285e5 100644
+--- a/.github/workflows/2-system.yaml
++++ b/.github/workflows/2-system.yaml
+@@ -20,6 +20,10 @@ name: System Tests
+ on:
+   # build on push
+   push:
++    tags:
++     - '*sys*'
++     - '*all*'
++    branches-ignore: '*'
+   # build on pull requests
+   pull_request:
+ 
+@@ -41,7 +45,7 @@ env:
+ 
+   # github
+   GH_BUILD: ${{ github.event_name }}-${{ github.sha }}
+-  GH_BRANCH: ${{ github.head_ref || github.ref_name }} 
++  GH_BRANCH: ${{ github.head_ref || github.ref_name }}
+ 
+ jobs:
+   openwhisk:
+@@ -59,7 +63,7 @@ jobs:
+         name: Show results and Upload logs
+         run: ./tools/github/checkAndUploadLogs.sh ${{ env.TEST_SUITE }}
+       - name: Slack Notification
+-        run: > 
++        run: >
+              ./tools/github/writeOnSlack.sh
+              "[$TEST_SUITE]" ${{ steps.tests.outcome }} on ${GH_BUILD}
+              $'\nbranch:' $GH_BRANCH
+diff --git a/.github/workflows/3-multi-runtime.yaml b/.github/workflows/3-multi-runtime.yaml
+index e74bba24..4544d28c 100644
+--- a/.github/workflows/3-multi-runtime.yaml
++++ b/.github/workflows/3-multi-runtime.yaml
+@@ -20,6 +20,11 @@ name: MultiRuntime Tests
+ on:
+   # build on push
+   push:
++    tags:
++     - '*multi*'
++     - '*all*'
++
++    branches-ignore: '*'
+   # build on pull requests
+   pull_request:
+ 
+@@ -41,7 +46,7 @@ env:
+ 
+   # github
+   GH_BUILD: ${{ github.event_name }}-${{ github.sha }}
+-  GH_BRANCH: ${{ github.head_ref || github.ref_name }} 
++  GH_BRANCH: ${{ github.head_ref || github.ref_name }}
+ 
+ jobs:
+   openwhisk:
+@@ -59,7 +64,7 @@ jobs:
+         name: Show results and Upload logs
+         run: ./tools/github/checkAndUploadLogs.sh ${{ env.TEST_SUITE }}
+       - name: Slack Notification
+-        run: > 
++        run: >
+              ./tools/github/writeOnSlack.sh
+              "[$TEST_SUITE]" ${{ steps.tests.outcome }} on ${GH_BUILD}
+              $'\nbranch:' $GH_BRANCH
+diff --git a/.github/workflows/4-standalone.yaml b/.github/workflows/4-standalone.yaml
+index 15a1c8ff..35be409e 100644
+--- a/.github/workflows/4-standalone.yaml
++++ b/.github/workflows/4-standalone.yaml
+@@ -20,6 +20,10 @@ name: Standalone Tests
+ on:
+   # build on push
+   push:
++    tags:
++     - '*stand*'
++     - '*all*'
++    branches-ignore: '*'
+   # build on pull requests
+   pull_request:
+ 
+@@ -41,7 +45,7 @@ env:
+ 
+   # github
+   GH_BUILD: ${{ github.event_name }}-${{ github.sha }}
+-  GH_BRANCH: ${{ github.head_ref || github.ref_name }} 
++  GH_BRANCH: ${{ github.head_ref || github.ref_name }}
+ 
+ jobs:
+   openwhisk:
+@@ -59,7 +63,7 @@ jobs:
+         name: Show results and Upload logs
+         run: ./tools/github/checkAndUploadLogs.sh ${{ env.TEST_SUITE }}
+       - name: Slack Notification
+-        run: > 
++        run: >
+              ./tools/github/writeOnSlack.sh
+              "[$TEST_SUITE]" ${{ steps.tests.outcome }} on ${GH_BUILD}
+              $'\nbranch:' $GH_BRANCH
+diff --git a/.github/workflows/5-scheduler.yaml b/.github/workflows/5-scheduler.yaml
+index 02b526d5..cafada4a 100644
+--- a/.github/workflows/5-scheduler.yaml
++++ b/.github/workflows/5-scheduler.yaml
+@@ -20,6 +20,10 @@ name: Scheduler Tests
+ on:
+   # build on push
+   push:
++    tags:
++      - '*sched*'
++      - '*all*'
++    branches-ignore: '*'
+   # build on pull requests
+   pull_request:
+ 
+@@ -41,7 +45,7 @@ env:
+ 
+   # github
+   GH_BUILD: ${{ github.event_name }}-${{ github.sha }}
+-  GH_BRANCH: ${{ github.head_ref || github.ref_name }} 
++  GH_BRANCH: ${{ github.head_ref || github.ref_name }}
+ 
+ jobs:
+   openwhisk:
+@@ -59,7 +63,7 @@ jobs:
+         name: Show results and Upload logs
+         run: ./tools/github/checkAndUploadLogs.sh ${{ env.TEST_SUITE }}
+       - name: Slack Notification
+-        run: > 
++        run: >
+              ./tools/github/writeOnSlack.sh
+              "[$TEST_SUITE]" ${{ steps.tests.outcome }} on ${GH_BUILD}
+              $'\nbranch:' $GH_BRANCH
+diff --git a/.github/workflows/6-performance.yaml b/.github/workflows/6-performance.yaml
+index 55e811b1..4cdb6a9e 100644
+--- a/.github/workflows/6-performance.yaml
++++ b/.github/workflows/6-performance.yaml
+@@ -20,6 +20,10 @@ name: Performance Tests
+ on:
+   # build on push
+   push:
++    tags:
++     - '*perf*'
++     - '*all*'
++    branches-ignore: '*'
+   # build on pull requests
+   pull_request:
+ 
+@@ -41,7 +45,7 @@ env:
+ 
+   # github
+   GH_BUILD: ${{ github.event_name }}-${{ github.sha }}
+-  GH_BRANCH: ${{ github.head_ref || github.ref_name }} 
++  GH_BRANCH: ${{ github.head_ref || github.ref_name }}
+ 
+ jobs:
+   openwhisk:
+@@ -76,7 +80,7 @@ jobs:
+       - run: OPENWHISK_HOST="172.17.0.1" USERS="1" REQUESTS_PER_SEC="1" ./gradlew gatlingRun-org.apache.openwhisk.ColdBlockingInvokeSimulation
+         continue-on-error: true
+       - name: Slack Notification
+-        run: > 
++        run: >
+              ./tools/github/writeOnSlack.sh
+              "[$TEST_SUITE]" ${{ steps.tests.outcome }} on ${GH_BUILD}
+              $'\nbranch:' $GH_BRANCH
+-- 
+2.34.1
+

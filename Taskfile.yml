@@ -27,16 +27,18 @@ vars:
   CONTROLLER_IMAGE: ghcr.io/nuvolaris/openwhisk-controller
   INVOKER_IMAGE: ghcr.io/nuvolaris/openwhisk-invoker
   STANDALONE_IMAGE: ghcr.io/nuvolaris/openwhisk-standalone
-  ACT: "undefined"
+  COMMON_IMAGE: ghcr.io/nuvolaris/openwhisk-common
+  ACT: "nothing"
   S: ""
 
 tasks:
+
   default:
     - task --list-all
   setup: 
     silent: true
 
-  image-tag: 
+  image-tag:
     - git tag -d $(git tag)
     - git tag -f {{.BASETAG}}.$(date +%y%m%d%H){{.S}}
     - task show
@@ -45,9 +47,10 @@ tasks:
     silent: true
     cmds:
       - echo "tag:" {{.TAG}}
-      - echo "controller:" ${MY_CONTROLLER_IMAGE:-{{.CONTROLLER}}}:{{.TAG}}
-      - echo "invoker:" ${MY_INVOKER_IMAGE:-{{.INVOKER}}}:{{.TAG}}
-      - echo "standalone:" ${MY_STANDALONE_IMAGE:-{{.STANDALONE}}}:{{.TAG}}
+      - echo "common:" {{.COMMON_IMAGE}}:{{.TAG}}
+      - echo "controller:" ${MY_CONTROLLER_IMAGE:-{{.CONTROLLER_IMAGE}}}:{{.TAG}}
+      - echo "invoker:" ${MY_INVOKER_IMAGE:-{{.INVOKER_IMAGE}}}:{{.TAG}}
+      - echo "standalone:" ${MY_STANDALONE_IMAGE:-{{.STANDALONE_IMAGE}}}:{{.TAG}}
 
   compile:controller:
     dir: openwhisk
@@ -82,18 +85,31 @@ tasks:
     - task: compile:invoker
     - task: compile:standalone
 
-  # this requires the IMG and DIR parameters to be invoked
+  docker-setup:
+    - docker run -it --rm --userns=host --privileged tonistiigi/binfmt --install all
+    - docker buildx create --name nuvolaris
+    - docker buildx use nuvolaris
+
+  docker-login: >
+    echo $GITHUB_TOKEN | docker login ghcr.io -u $GITHUB_USER --password-stdin
+
+  # this requires ACT IMG and DIR parameters to be passed
   docker-build:
     silent: true
     cmds:
     - |-
       echo "***" {{.ACT}} for {{.IMG}} in {{.DIR}}
       case "{{.ACT}}" in
-      (build) docker build {{.DIR}} -t {{.IMG}} ;;
-      (buildx) docker buildx build --platform linux/amd64,linux/arm64 -t {{.IMG}} {{.DIR}} ;;
-      (build-push) docker build {{.DIR}} -t {{.IMG}} ; docker push {{.IMG}} ;;
-      (buildx-push) docker buildx build --platform linux/amd64,linux/arm64 -t {{.IMG}} {{.DIR}} --push ;;
-      (*) echo action undefined
+      (build) 
+      docker build {{.DIR}} -t {{.IMG}} --build-arg BASE={{.BASE}}
+      ;;
+      (buildx) 
+      docker buildx build --platform linux/amd64,linux/arm64 --build-arg BASE={{.BASE}} -t {{.IMG}} {{.DIR}}
+      ;;
+      (buildx-push) 
+      docker buildx build --platform linux/amd64,linux/arm64 --build-arg BASE={{.BASE}} -t {{.IMG}} {{.DIR}} --push 
+      ;;
+      (*) echo ACT must be "build|buildx|buildx-push"
       esac
 
   build:scala:
@@ -101,8 +117,9 @@ tasks:
       - task: docker-build
         vars:
           DIR: openwhisk/common/scala
-          IMG: "scala"
-          ACT: '{{.ACT | or "build"}}'
+          IMG: "{{.COMMON_IMAGE}}:{{.TAG}}"
+          ACT: '{{.ACT}}'
+          BASE: "{{.COMMON_IMAGE}}:{{.TAG}}" # not used
 
   build:controller:
     deps:
@@ -112,7 +129,8 @@ tasks:
         vars:
           DIR: openwhisk/core/controller
           IMG: "${MY_CONTROLLER_IMAGE:-{{.CONTROLLER_IMAGE}}}:{{.TAG}}"
-          ACT: '{{.ACT | or "build"}}'
+          ACT: '{{.ACT}}'
+          BASE: "{{.COMMON_IMAGE}}:{{.TAG}}"
  
   build:invoker:
     deps:
@@ -122,9 +140,9 @@ tasks:
         vars:
           DIR: openwhisk/core/invoker
           IMG: "${MY_INVOKER_IMAGE:-{{.INVOKER_IMAGE}}}:{{.TAG}}"
-          ACT: '{{.ACT | or "build"}}'
+          ACT: '{{.ACT}}'
+          BASE: "{{.COMMON_IMAGE}}:{{.TAG}}"
   
-
   build:standalone:
     deps:
     - compile:standalone
@@ -134,31 +152,27 @@ tasks:
           DIR: standalone
           IMG: "${MY_STANDALONE_IMAGE:-{{.STANDALONE_IMAGE}}}:{{.TAG}}"
           ACT: '{{.ACT | or "build"}}'
+          BASE: "{{.COMMON_IMAGE}}:{{.TAG}}"
   
-  build-and-push:
+  build-all:
     cmds:
     - task: build:scala
       vars:
          ACT: "build" 
     - task: build:controller
       vars:
-         ACT: "build-push"      
+         ACT: "build"      
     - task: build:invoker
       vars:
-         ACT: "build-push"
+         ACT: "build"
     - task: build:standalone
       vars:
-         ACT: "build-push"
-
-  buildx-prepare:
-    - docker buildx install
-    - docker buildx create --name nuvolaris
-
+         ACT: "build"
 
   buildx-and-push:
     - task: build:scala
       vars:
-         ACT: "buildx" 
+         ACT: "buildx-push" 
     - task: build:controller
       vars:
          ACT: "buildx-push"      
@@ -168,3 +182,4 @@ tasks:
     - task: build:standalone
       vars:
          ACT: "buildx-push"
+

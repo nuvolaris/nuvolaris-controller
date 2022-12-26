@@ -1,0 +1,53 @@
+From 207533aac9a034f8c7d2908457067e1fb6dfeaf8 Mon Sep 17 00:00:00 2001
+From: Michele Sciabarra <michele@sciabarra.com>
+Date: Sat, 24 Dec 2022 20:04:37 +0000
+Subject: [PATCH 3/5] fixes to build re-enabling a test disabled swagger test,
+ re-enabled activation proxy test
+
+---
+ ansible/group_vars/all   | 6 ++----
+ tools/travis/runTests.sh | 2 +-
+ 2 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/ansible/group_vars/all b/ansible/group_vars/all
+index 072e4aeb..eee2f52e 100644
+--- a/ansible/group_vars/all
++++ b/ansible/group_vars/all
+@@ -166,7 +166,7 @@ kafka:
+     protocols:
+     - TLSv1.2
+   protocol: "{{ kafka_protocol_for_setup }}"
+-  version: "{{ kafka_version | default('2.13-2.7.0') }}"
++  version: "{{ kafka_version | default('2.12-2.3.1') }}"
+   port: 9072
+   advertisedPort: 9093
+   ras:
+@@ -186,7 +186,7 @@ kafka_connect_string: "{% set ret = [] %}\
+ kafka_protocol_for_setup: "{{ kafka_protocol | default('PLAINTEXT') }}"
+ 
+ zookeeper:
+-  version: 3.4
++  version: 3.4.14
+   port: 2181
+ 
+ zookeeper_connect_string: "{% set ret = [] %}\
+@@ -551,5 +551,3 @@ scheduler:
+     throttlingFraction: "{{ scheduler_queue_throttlingFraction | default(0.9) }}"
+     durationBufferSize: "{{ scheduler_queue_durationBufferSize | default(10) }}"
+   deployment_ignore_error: "{{ scheduler_deployment_ignore_error | default('False') }}"
+-  dataManagementService:
+-    retryInterval: "{{ scheduler_dataManagementService_retryInterval | default('1 second') }}"
+diff --git a/tools/travis/runTests.sh b/tools/travis/runTests.sh
+index e2a7f7a4..c47f542f 100755
+--- a/tools/travis/runTests.sh
++++ b/tools/travis/runTests.sh
+@@ -28,5 +28,5 @@ cd $ROOTDIR
+ cat whisk.properties
+ TERM=dumb ./gradlew :tests:testCoverageLean :tests:reportCoverage :tests:testSwaggerCodegen
+ 
+-bash <(curl -s https://codecov.io/bash)
++#bash <(curl -s https://codecov.io/bash)
+ echo "Time taken for ${0##*/} is $SECONDS secs"
+-- 
+2.34.1
+

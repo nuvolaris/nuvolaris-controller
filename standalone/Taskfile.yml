@@ -1,0 +1,133 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+version: '3'
+dotenv: 
+  - .env
+
+vars:
+  BASETAG: 0.3.0-morpheus
+  CONTROLLER: ghcr.io/nuvolaris/openwhisk-controller
+  INVOKER: ghcr.io/nuvolaris/openwhisk-invoker
+  TAG:
+    sh: git describe --tags --abbrev=0 2>/dev/null
+  HOSTNAME:
+    sh: hostname -f
+  APIHOST: http://{{.HOSTNAME}}:8080
+  WHISK_SYSTEM: "789c46b1-71f6-4ed5-8c54-816aa4f8c502:abczO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
+  GUEST: "23bc46b1-71f6-4ed5-8c54-816aa4f8c502:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP"
+
+tasks:
+
+  buildx-and-push:
+    deps:
+      - compile
+    cmds:
+      - docker buildx build --platform linux/amd64,linux/arm64 -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest . --push
+
+  buildx:
+    deps:
+      - compile
+    cmds:
+      - docker buildx create --use
+      - docker buildx build --platform linux/amd64 -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest .
+
+  build:
+    deps:
+      - compile
+    cmds:
+      - docker build . -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest
+
+  build-and-load:
+    deps: 
+      - build
+    cmds:
+      - kind load docker-image {{.IMAGE}}:{{.TAG}}
+
+  compile:
+    dir: ../openwhisk
+    cmds:
+      - ./gradlew :core:standalone:build
+      - mkdir -p ../standalone/lib
+      - cp bin/openwhisk-standalone.jar ../standalone/lib/
+    status:
+      - test -f bin/openwhisk-standalone.jar
+
+  clean: 
+    cmds:
+      - | 
+       rm lib/*.jar
+       cd ../openwhisk
+       rm bin/* 
+       ./gradlew clean 
+    ignore_error: true
+  
+  run:
+    deps: 
+      - compile
+    cmds:
+      - bin/standalone
+
+  debug:
+    deps:
+     - build
+    cmds:
+      - >
+       docker run -ti
+       -p 3232:3232 -p 3233:3233 -p 7896:7896
+       --entrypoint=bin/debug
+       {{.IMAGE}}:{{.TAG}}
+    interactive: true
+
+  kustomization:
+    cmds:
+      - |
+       cat <<__EOF__ >deploy/kustomization.yaml
+       apiVersion: kustomize.config.k8s.io/v1beta1
+       kind: Kustomization
+       images:
+       - name: {{.IMAGE}}
+         newTag: {{.TAG}}
+       resources:
+       - nuvolaris-ns.yaml
+       - standalone-roles.yaml
+       - standalone-deploy.yaml
+       - standalone-svc.yaml
+       __EOF__
+
+  kustomize:
+   deps: ["kustomization"]
+   cmds:
+     - kubectl kustomize deploy
+
+  deploy:
+   deps: ["kustomization", "build-and-load"]
+   cmds:
+    - kubectl apply -k deploy
+
+  undeploy:
+   deps: ["kustomization"]
+   cmds:
+    - kubectl delete -k deploy
+  
+  redeploy:
+    deps: ["undeploy", "deploy"]
+
+  list:
+    cmds:
+      - kubectl -n nuvolaris get all
+      - kubectl -n nuvolaris get svc
