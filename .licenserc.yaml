@@ -21,8 +21,8 @@ header:
     copyright-owner: Apache Software Foundation
 
   paths-ignore:
-    - './vscode/*'
-    - './git-hook/*'
+    - '.vscode/*'
+    - '.git-hooks/*'
     - 'LICENSE'
     - 'openwhisk/**'
     - 'openwhisk-*/**'
