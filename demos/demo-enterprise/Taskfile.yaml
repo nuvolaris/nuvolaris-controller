@@ -27,12 +27,12 @@ tasks:
     - kubectl config set-context --current --namespace nuvolaris
     
   couchdb:
-     - kubectl {{.CMD}} -f couchdb
+    - kubectl {{.CMD}} -f couchdb
 
   couchdb:delete: task couchdb CMD=delete
 
   redpanda: 
-     - kubectl {{.CMD}} -f redpanda
+      - kubectl {{.CMD}} -f redpanda
 
   kafka:
     - kubectl -n nuvolaris apply -f kafka
