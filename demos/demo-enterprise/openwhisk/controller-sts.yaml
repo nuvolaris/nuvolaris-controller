@@ -60,7 +60,7 @@ spec:
       containers:
       - name: controller
         imagePullPolicy: "IfNotPresent"
-        image: "openwhisk/controller:21c9a63"       
+        image: "ghcr.io/nuvolaris/openwhisk-controller:0.3.0-morpheus.22122609"       
         command: ["/bin/bash", "-c", "/init.sh `hostname | awk -F '-' '{print $NF}'`"]     
         ports:
         - name: controller

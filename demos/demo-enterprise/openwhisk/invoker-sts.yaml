@@ -54,7 +54,7 @@ spec:
       
       containers:
       - name: invoker
-        image: "openwhisk/invoker:nightly"
+        image: "ghcr.io/nuvolaris/openwhisk-invoker:0.3.0-morpheus.22122609"
         imagePullPolicy: "IfNotPresent"
         command: [ "/bin/bash", "-c", "/init.sh --uniqueName $INVOKER_NAME" ]
         #command: ["sleep", "inf"]
