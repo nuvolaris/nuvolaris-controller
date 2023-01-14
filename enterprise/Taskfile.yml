@@ -106,7 +106,7 @@ tasks:
     deps:
       - compile
     cmds:
-      - bash -x bin/controller 0
+      - bash -x controller/bin/controller 0
     env:
       CONTROLLER_OPTS: >
         -Dconfig.file=etc/standalone.conf
