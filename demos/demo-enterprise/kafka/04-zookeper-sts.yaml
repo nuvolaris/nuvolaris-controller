@@ -42,7 +42,7 @@ spec:
       volumes:
         - name: zk-config
           configMap:
-            name: zookeeper
+            name: zookeeper         
         - name: "zookeeper-pvc-data"
           persistentVolumeClaim:
             claimName: "zookeeper-pvc-data"
@@ -80,7 +80,7 @@ spec:
           timeoutSeconds: 1
         volumeMounts:
         - mountPath: /conf
-          name: zk-config
+          name: zk-config         
         - mountPath: /data
           name: "zookeeper-pvc-data"
         - mountPath: /datalog
