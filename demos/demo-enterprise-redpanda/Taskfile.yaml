@@ -1,0 +1,103 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+version: '3'
+
+vars:
+  CMD: apply
+
+tasks:
+
+  init:
+    - kubectl apply -f init
+    - kubectl config set-context --current --namespace nuvolaris
+    
+  couchdb:
+     - kubectl {{.CMD}} -f couchdb
+
+  couchdb:delete: task couchdb CMD=delete
+
+  zookeeper:
+     - kubectl {{.CMD}} -f zookeeper
+
+  zookeeper:delete: task zookeeper CMD=delete  
+
+  redpanda: 
+     - kubectl {{.CMD}} -f redpanda
+
+  redpanda:check:
+     - kubectl -n nuvolaris rollout status statefulset redpanda --watch        
+
+  redpanda:delete: task redpanda CMD=delete 
+
+  redpanda:shell:
+    - kubectl -n nuvolaris exec --stdin --tty redpanda-0 -- /bin/bash
+
+  redpanda:test:
+    - kubectl -n nuvolaris exec -ti redpanda-0 -c redpanda -- rpk topic create test-topic --brokers redpanda-0.redpanda.nuvolaris.svc.cluster.local.:9093
+    - kubectl -n nuvolaris exec -ti redpanda-0 -c redpanda -- rpk topic describe test-topic --brokers redpanda-0.redpanda.nuvolaris.svc.cluster.local.:9093
+    - kubectl -n nuvolaris exec -ti redpanda-0 -c redpanda -- rpk topic delete test-topic --brokers redpanda-0.redpanda.nuvolaris.svc.cluster.local.:9093
+
+  redpanda:repo:
+    -  helm repo add redpanda https://charts.redpanda.com
+    -  helm repo update
+
+  redpanda:helm:
+    - helm install redpanda redpanda/redpanda --namespace redpanda --create-namespace  --set statefulset.replicas=1
+
+  redpanda:helm-clean:
+    - kubectl delete namespace redpanda
+  
+  couchdb:test:
+    - kubectl -n nuvolaris apply -f common/kcat.yaml
+    - kubectl -n nuvolaris wait po kcat --for=condition=Ready 
+    - >
+      kubectl -n nuvolaris exec -i kcat -- /bin/sh -c
+      'wget -qO- http://whisk_admin:some_passw0rd@$COUCHDB_SERVICE_HOST:$COUCHDB_SERVICE_PORT/_all_dbs/'     
+    - kubectl -n nuvolaris delete -f common/kcat.yaml --grace-period=0
+
+  wsk:test:
+    - wsk action update hello tests/hello.js
+    - wsk action invoke hello 
+
+
+# kafkacat -L -b localhost:9092
+# echo test | kafkacat -P -b localhost:9092 -t test
+# kafkacat -C -b localhost:9092 -t test
+
+  watch: watch kubectl -n nuvolaris get deploy,pod,service,job,pvc 
+    
+  clean:
+    cmds:
+    - kubectl -n nuvolaris delete -f openwhisk
+    - task redpanda CMD=delete
+    - task couchdb CMD=delete
+    - task zookeeper CMD=delete
+    - task init CMD=delete
+
+  export:
+    cmds:
+    - | 
+      if test -z "{{.F}}"
+      then ls "{{.TPL}}/templates" ; echo select with "F=<file>" no .yaml
+      else helm template openwhisk {{.TPL}} \
+      -n nuvolaris -f openwhisk-deploy-kube/deploy/kind/mycluster.yaml \
+      -s  templates/{{.F}}.yaml | tee ../demo-enterprise/export/{{.F}}.yaml
+      fi
+    vars:
+      TPL: openwhisk-deploy-kube/helm/openwhisk
+    dir: ../openwhisk-kube

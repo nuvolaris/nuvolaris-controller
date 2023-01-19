@@ -1,0 +1,89 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+---
+apiVersion: v1
+data:
+  bootstrap.yaml: |
+    enable_sasl: false
+    compacted_log_segment_size: 67108864
+    group_topic_partitions: 16
+    kafka_batch_max_bytes: 1048576
+    kafka_connection_rate_limit: 1000
+    log_segment_size: 134217728
+    log_segment_size_max: 268435456
+    log_segment_size_min: 16777216
+    max_compacted_log_segment_size: 536870912
+    topic_partitions_per_shard: 1000
+    storage_min_free_bytes: 1073741824
+  redpanda.yaml: |
+    config_file: /etc/redpanda/redpanda.yaml
+    redpanda:
+      empty_seed_starts_cluster: false
+      admin:
+        name: admin
+        address: 0.0.0.0
+        port: 9644
+      kafka_api:
+        - name: internal
+          address: 0.0.0.0
+          port: 9093
+        - name: default
+          address: 0.0.0.0
+          port: 9094
+      kafka_api_tls:
+      rpc_server:
+        address: 0.0.0.0
+        port: 33145
+      seed_servers:
+        - host:
+            address: "redpanda-0.redpanda.nuvolaris.svc.cluster.local."
+            port: 33145
+    schema_registry:
+      schema_registry:
+        - name: internal
+          address: 0.0.0.0
+          port: 8081
+        - name: default
+          address: 0.0.0.0
+          port: 8080
+      schema_registry_api_tls:
+    pandaproxy:
+      pandaproxy_api:
+        - name: internal
+          address: 0.0.0.0
+          port: 8082
+        - name: default
+          address: 0.0.0.0
+          port: 8083
+      pandaproxy_api_tls:
+    rpk:
+      enable_usage_stats: true
+      overprovisioned: false
+      enable_memory_locking: false
+kind: ConfigMap
+metadata:
+  annotations:
+    meta.helm.sh/release-name: redpanda
+    meta.helm.sh/release-namespace: redpanda
+  labels:
+    app.kubernetes.io/component: redpanda
+    app.kubernetes.io/instance: redpanda
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: redpanda
+    helm.sh/chart: redpanda-2.5.1
+  name: redpanda
+  namespace: nuvolaris
