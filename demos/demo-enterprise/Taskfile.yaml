@@ -41,19 +41,19 @@ tasks:
     - kubectl -n nuvolaris delete -f kafka
 
   kafka:test:
-    - kubectl -n nuvolaris apply -f kafka/kcat.yaml
+    - kubectl -n nuvolaris apply -f common/kcat.yaml
     - kubectl -n nuvolaris wait po kcat --for=condition=Ready 
     - kubectl -n nuvolaris exec -ti kcat -- /bin/sh -c 'echo test | kcat -P -b $NUV_KAFKA_BOOTSTRAP_SERVICE_HOST:$NUV_KAFKA_BOOTSTRAP_SERVICE_PORT_TCP_CLIENTS -t test'
     - kubectl -n nuvolaris exec -ti kcat -- /bin/sh -c 'kcat -C -b $NUV_KAFKA_BOOTSTRAP_SERVICE_HOST:$NUV_KAFKA_BOOTSTRAP_SERVICE_PORT_TCP_CLIENTS -t test -e'
-    - kubectl -n nuvolaris delete -f kafka/kcat.yaml --grace-period=0
+    - kubectl -n nuvolaris delete -f common/kcat.yaml --grace-period=0
 
   couchdb:test:
-    - kubectl -n nuvolaris apply -f kafka/kcat.yaml
+    - kubectl -n nuvolaris apply -f common/kcat.yaml
     - kubectl -n nuvolaris wait po kcat --for=condition=Ready 
     - >
       kubectl -n nuvolaris exec -i kcat -- /bin/sh -c
-      'wget -qO- http://whisk_admin:some_passw0rd@$COUCHDB_SERVICE_HOST:$COUCHDB_SERVICE_PORT/_all_dbs/'
-    - kubectl -n nuvolaris delete -f kafka/kcat.yaml --grace-period=0
+      'wget -qO- http://whisk_admin:some_passw0rd@$COUCHDB_SERVICE_HOST:$COUCHDB_SERVICE_PORT/_all_dbs/'     
+    - kubectl -n nuvolaris delete -f common/kcat.yaml --grace-period=0
 
 
 # kafkacat -L -b localhost:9092
@@ -64,9 +64,11 @@ tasks:
     
   clean:
     cmds:
-    - task redpanda CMD=delete
-    - task couchdb CMD=delete
-    - task init CMD=delete
+    - task redpanda
+    - task couchdb
+    - task init
+    vars:
+      CMD: delete
 
   export:
     cmds:

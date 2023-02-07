@@ -54,7 +54,7 @@ spec:
       
       containers:
       - name: invoker
-        image: "whisk/invoker:latest"
+        image: "ghcr.io/nuvolaris/openwhisk-invoker:0.3.0-morpheus.22122609"
         imagePullPolicy: "IfNotPresent"
         command: [ "/bin/bash", "-c", "/init.sh --uniqueName $INVOKER_NAME" ]
         #command: ["sleep", "inf"]
@@ -166,6 +166,7 @@ spec:
               secretKeyRef:
                 name: couchdb-auth
                 key: db_password
+
           - name: "CONFIG_whisk_couchdb_port"
             value: "5984"
           - name: "CONFIG_whisk_couchdb_protocol"
@@ -180,9 +181,16 @@ spec:
             value: "nuvolaris_whisks"
           - name: "CONFIG_whisk_couchdb_databases_WhiskAuth"
             value: "nuvolaris_subjects"
+
+
+          - name: "CONFIG_whisk_couchdb_invoker_username"
+            value: "invoker_admin"
+          - name: "CONFIG_whisk_couchdb_invoker_password"
+            value: "s0meP@ass1"
+
           # properties for kafka connection
           - name: "KAFKA_HOSTS"
-            value: "nuv-kafka-bootstrap:9092"
+            value: "kafka:9092"
 
           - name: "CONFIG_whisk_kafka_replicationFactor"
             value: ""
@@ -236,7 +244,7 @@ spec:
 
           # properties for zookeeper connection
           - name: "ZOOKEEPER_HOSTS"
-            value: "nuv-zookeeper-client:2181"
+            value: "zookeeper:2181"
 
           - name: "CONFIG_logback_log_level"
             value: "INFO"
@@ -245,6 +253,10 @@ spec:
             value: "30 s"
           - name: "CONFIG_whisk_runtime_delete_timeout"
             value: "30 seconds"
+
+          # apparently this is needed for the invoker
+          - name: "CONFIG_whisk_helm_release"
+            value: "helm_nuvolaris"            
         ports:
         - name: invoker
           containerPort: 8080

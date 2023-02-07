@@ -31,10 +31,9 @@ spec:
       restartPolicy: Never      
       containers:
       - name: init-couchdb
-        image: "ghcr.io/nuvolaris/nuvolaris-operator:0.2.1-trinity.22070510"
+        image: "ghcr.io/francescotimperi/nuvolaris-operator:0.3.0-morpheus.23011320"
         imagePullPolicy: "IfNotPresent"
         command: ["./dbinit.sh"]
-        #command: ["sleep", "inf"]
         env:
         - name: "NUVOLARIS_CONFIG"
           value: |
@@ -48,11 +47,11 @@ spec:
             "components.s3bucket": false,
             "couchdb.admin.password": "some_passw0rd",
             "couchdb.admin.user": "whisk_admin",
-            "couchdb.controller.password": "s0meP@ass1",
-            "couchdb.controller.user": "invoker_admin",
+            "couchdb.invoker.password": "s0meP@ass1",
+            "couchdb.invoker.user": "invoker_admin",
             "couchdb.host": "couchdb",
-            "couchdb.invoker.password": "s0meP@ass2",
-            "couchdb.invoker.user": "controller_admin",
+            "couchdb.controller.password": "s0meP@ass2",
+            "couchdb.controller.user": "controller_admin",
             "couchdb.port": 5984,
             "couchdb.volume-size": 10,
             "kafka.host": "kafka",
@@ -65,8 +64,8 @@ spec:
             "openwhisk.limits.actions.invokes-perMinute": 999,
             "openwhisk.limits.actions.sequence-maxLength": 50,
             "openwhisk.limits.triggers.fires-perMinute": 999,
-            "openwhisk.namespaces.nuvolaris": "cbd68075-dac2-475e-8c07-d62a30c7e683:123zO3xZCLrMN6v2Bx1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP",
             "openwhisk.namespaces.whisk-system": "789c46b1-71f6-4ed5-8c54-816aa4f8c502:abczO3xZCLrMN6v2Bx1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP",
+            "openwhisk.namespaces.nuvolaris": "cbd68075-dac2-475e-8c07-d62a30c7e683:123zO3xZCLrMN6v2BKK1dXYFpXlPkccOFqm12CdAsMgRU4VrNZ9lyGVCGuMDGIwP",                                                                                  
             "s3.id": "AKIAIOSFODNN7EXAMPLE",
             "s3.key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
             "s3.region": "eu-central-1",
@@ -77,8 +76,8 @@ spec:
             "nuvolaris.apiport": "3233",
             "nuvolaris.kube": "kind",
             "nuvolaris.protocol": "http",
-            "operator.image": "ghcr.io/nuvolaris/nuvolaris-operator",
-            "operator.tag": "0.2.1-trinity.22070510",
+            "operator.image": "ghcr.io/francescotimperi/nuvolaris-operator",
+            "operator.tag": "0.3.0-morpheus.23010920",
             "controller.image": "ghcr.io/nuvolaris/openwhisk-standalone",
             "controller.tag": "0.2.1-trinity.22062010"
             }
