@@ -31,10 +31,10 @@ metadata:
 spec:
   tls:
     - hosts:
-      - nuvolaris.minio.44.203.144.96.nip.io
-      secretName: minio-tls-secret
+      - minio.server.44.203.144.96.nip.io
+      secretName: minio-server-tls-secret
   rules:
-    - host: nuvolaris.minio.44.203.144.96.nip.io
+    - host: minio.server.44.203.144.96.nip.io
       http:
         paths:
           - path: /

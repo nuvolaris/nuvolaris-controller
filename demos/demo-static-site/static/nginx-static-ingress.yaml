@@ -29,14 +29,14 @@ metadata:
       nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
       nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
       nginx.ingress.kubernetes.io/use-regex: "true"
-      nginx.ingress.kubernetes.io/rewrite-target: /akamai/$1
+      nginx.ingress.kubernetes.io/rewrite-target: /namespace/$1
 spec:
   tls:
     - hosts:
-      - akamai.44.203.144.96.nip.io
-      secretName: akamai-nginx-tls-secret
+      - namespace.44.203.144.96.nip.io
+      secretName: namespace-nginx-tls-secret
   rules:
-    - host: akamai.44.203.144.96.nip.io
+    - host: namespace.44.203.144.96.nip.io
       http:
         paths:
           - path: /(.*)

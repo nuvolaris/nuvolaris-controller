@@ -30,7 +30,7 @@ env:
 
 tasks:
   minio-alias:
-    - mc alias set testminio https://nuvolaris.minio.44.203.144.96.nip.io/ minioadmin 2q9RmtwiqyWxpjsEFb5C
+    - mc alias set testminio https://minio.server.44.203.144.96.nip.io/ minioadmin 2q9RmtwiqyWxpjsEFb5C
   # Docker image
   docker-login: >
     echo $GITHUB_TOKEN | docker login ghcr.io -u $GITHUB_USER --password-stdin
@@ -82,14 +82,14 @@ tasks:
 
   deploy:content:
     cmds:
-      - mc mb testminio/akamai/static1
-      - mc mb testminio/akamai/static2
-      - mc mb testminio/akamai/static3
-      - mc cp -r content/ testminio/akamai/static1
-      - mc cp -r content/ testminio/akamai/static2
-      - mc cp -r content/ testminio/akamai/static3
-      - mc cp nginx/index.html testminio/akamai
-      - mc anonymous -r set download testminio/akamai
+      - mc mb testminio/namespace/static1
+      - mc mb testminio/namespace/static2
+      - mc mb testminio/namespace/static3
+      - mc cp -r content/ testminio/namespace/static1
+      - mc cp -r content/ testminio/namespace/static2
+      - mc cp -r content/ testminio/namespace/static3
+      - mc cp nginx/index.html testminio/namespace
+      - mc anonymous -r set download testminio/namespace
 
   all:
     cmds:

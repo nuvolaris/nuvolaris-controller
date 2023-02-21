@@ -29,10 +29,10 @@ Purpose of the demo
 
 This demo has been implemented using a MICROK8S environment installed on a AWS EC2 server and provides and assumes that the MINIO mc client is installed to interact with the MINIO server to upload static content for testing.
 
-- a minio server at URL https://nuvolaris.minio.44.203.144.96.nip.io 
-- a nginx webserver at URL https://akamai.44.203.144.96.nip.io
+- a minio server at URL https://minio.server.44.203.144.96.nip.io
+- a nginx webserver at URL https://namespace.44.203.144.96.nip.io
 
-to test it just open the web browser at URLs https://akamai.44.203.144.96.nip.io/static1/ , https://akamai.44.203.144.96.nip.io/static2/, https://akamai.44.203.144.96.nip.io/static3/
+to test it just open the web browser at URLs https://namespace.44.203.144.96.nip.io/static1/ , https://namespace.44.203.144.96.nip.io/static2/, https://namespace.44.203.144.96.nip.io/static3/
 
 A taskfile is provided to simplify the demo setup:
 
@@ -44,21 +44,21 @@ If everithing is OK executing `kubectl -n minio get pods,svc,pvc,ingress,secrets
 
 ```
 NAME                                    READY   STATUS    RESTARTS   AGE
-pod/nginx-deployment-6d8754858b-rttct   1/1     Running   0          16m
-pod/minio-test-dep-6489455b9d-vxtc9     1/1     Running   0          16m
+pod/nginx-deployment-6d8754858b-gxh2s   1/1     Running   0          97s
+pod/minio-test-dep-6489455b9d-djp4b     1/1     Running   0          99s
 
-NAME                  TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)             AGE
-service/staticminio   ClusterIP   10.152.183.85    <none>        9001/TCP,9091/TCP   16m
-service/nginx-svc     ClusterIP   10.152.183.157   <none>        80/TCP              16m
+NAME                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)             AGE
+service/staticminio   ClusterIP   10.152.183.51   <none>        9001/TCP,9091/TCP   99s
+service/nginx-svc     ClusterIP   10.152.183.69   <none>        80/TCP              97s
 
 NAME                                    STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS        AGE
-persistentvolumeclaim/minio-pvc-claim   Bound    pvc-333f58a5-5379-4391-9142-dc79b2c6f22b   2Gi        RWO            microk8s-hostpath   16m
+persistentvolumeclaim/minio-pvc-claim   Bound    pvc-e2b82b5e-d9db-4c33-8f6c-a610c194fcfc   2Gi        RWO            microk8s-hostpath   99s
 
-NAME                                      CLASS    HOSTS                                  ADDRESS     PORTS     AGE
-ingress.networking.k8s.io/minio-ingress   <none>   nuvolaris.minio.44.203.144.96.nip.io   127.0.0.1   80, 443   16m
-ingress.networking.k8s.io/nginx-ingress   <none>   akamai.44.203.144.96.nip.io            127.0.0.1   80, 443   16m
+NAME                                      CLASS    HOSTS                               ADDRESS     PORTS     AGE
+ingress.networking.k8s.io/minio-ingress   <none>   minio.server.44.203.144.96.nip.io   127.0.0.1   80, 443   99s
+ingress.networking.k8s.io/nginx-ingress   <none>   namespace.44.203.144.96.nip.io      127.0.0.1   80, 443   97s
 
-NAME                             TYPE                DATA   AGE
-secret/minio-tls-secret          kubernetes.io/tls   2      16m
-secret/akamai-nginx-tls-secret   kubernetes.io/tls   2      15m
+NAME                                TYPE                DATA   AGE
+secret/namespace-nginx-tls-secret   kubernetes.io/tls   2      95s
+secret/minio-server-tls-secret      kubernetes.io/tls   2      73s
 ```
