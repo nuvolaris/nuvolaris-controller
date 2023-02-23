@@ -25,7 +25,7 @@ Purpose of the demo
 
 - Setup a MINIO server to be used to host static content inside a buckets having similar structure <namespace>/<path>
 - Setup a NGINX server capable to serve content from MINIO
-- Setup a NGINX-INGRESS serving a RUL similar to https://<namespace>.domain.xx/<path> which will serve the content from MINIO hosted in the bucket <namespace>/<path>
+- Setup a NGINX-INGRESS serving a URL similar to https://<namespace>.domain.xx/<path> which will serve the content from MINIO hosted in the bucket <namespace>/<path>
 
 This demo has been implemented using a MICROK8S environment installed on a AWS EC2 server and provides and assumes that the MINIO mc client is installed to interact with the MINIO server to upload static content for testing.
 
@@ -61,4 +61,57 @@ ingress.networking.k8s.io/nginx-ingress   <none>   namespace.44.203.144.96.nip.i
 NAME                                TYPE                DATA   AGE
 secret/namespace-nginx-tls-secret   kubernetes.io/tls   2      95s
 secret/minio-server-tls-secret      kubernetes.io/tls   2      73s
+```
+
+### Note
+This demo assumes that access to a specific namespace bucket is exposed via an ad hoc ingress which will expose the bucket content over https using a let's encrypt provisioned certificates. The ingress contains some specific configuration to automatically forward all the requests to the specific MINIO bucket using these annotations
+
+- `nginx.ingress.kubernetes.io/use-regex: "true"`
+- `nginx.ingress.kubernetes.io/rewrite-target: /namespace/$1`
+
+together with the path expression `path: /(.*)`
+
+```
+....
+      nginx.ingress.kubernetes.io/use-regex: "true"
+      nginx.ingress.kubernetes.io/rewrite-target: /namespace/$1
+spec:
+  tls:
+    - hosts:
+      - namespace.44.203.144.96.nip.io
+      secretName: namespace-nginx-tls-secret
+  rules:
+    - host: namespace.44.203.144.96.nip.io
+      http:
+        paths:
+          - path: /(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx-svc
+                port: 
+                  number: 80  
+....      
+```
+
+the NGINX service `nginx-svc` default configuration contains essentially the required proxy rules to forward all the request to a MINIO instance
+
+```
+...
+    location / {
+        rewrite ^/$ ${request_uri}index.html break;
+        rewrite (.*)/$ $1/index.html;        
+        rewrite ^([^.]*[^/])$ $1/ permanent;
+        
+        proxy_hide_header     x-amz-id-2;
+        proxy_hide_header     x-amz-meta-etag;
+        proxy_hide_header     x-amz-request-id;
+        proxy_hide_header     x-amz-meta-server-side-encryption;
+        proxy_hide_header     x-amz-server-side-encryption;        
+        proxy_set_header Host $http_host;
+
+        proxy_pass http://staticminio.minio.svc.cluster.local:9001/;
+	    proxy_redirect     off;
+    } 
+...     
 ```
