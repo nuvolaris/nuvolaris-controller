@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    meta.helm.sh/release-name: nuvolaris-prometheus
+    meta.helm.sh/release-namespace: nuvolaris
+  labels:
+    app.kubernetes.io/component: server
+    app.kubernetes.io/instance: nuvolaris-prometheus
+    app.kubernetes.io/name: prometheus
+  name: nuvolaris-prometheus-server
+  namespace: nuvolaris
+data:
+  alerting_rules.yml: |
+    {}
+  alerts: |
+    {}
+  allow-snippet-annotations: "false"
+  prometheus.yml: |
+    global:
+      evaluation_interval: 1m
+      scrape_interval: 1m
+      scrape_timeout: 10s
+    rule_files:
+    - /etc/config/recording_rules.yml
+    - /etc/config/alerting_rules.yml
+    - /etc/config/rules
+    - /etc/config/alerts
+    scrape_configs:
+    - job_name: prometheus
+      static_configs:
+      - targets:
+        - localhost:9999
+    - job_name: ow-controller
+      static_configs:
+      - targets:
+        - controller:3233
+    - job_name: kafka
+      static_configs:
+      - targets:
+        - kafka:9071              
+  recording_rules.yml: |
+    {}
+  rules: |
+    {}
