@@ -1,0 +1,23 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  GREETING: Hello, World!
+
+tasks:
+
+  setup-repo:
+    - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    - helm repo update
+
+  view-values:
+    - helm show values prometheus-community/prometheus
+
+  setup-minimal: 
+    - |
+      helm install nuvolaris-prometheus prometheus-community/prometheus -f values.yaml
+
+  cleanup-minimal:
+    - helm uninstall nuvolaris-prometheus
+

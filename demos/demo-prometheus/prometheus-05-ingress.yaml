@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  name: prometheus
+  namespace: nuvolaris
+spec:
+  rules:
+  - host: localhost
+    http:
+      paths:
+      - backend:
+          service:
+            name: nuvolaris-prometheus-server
+            port:
+              number: 9999
+        path: /
+        pathType: Prefix

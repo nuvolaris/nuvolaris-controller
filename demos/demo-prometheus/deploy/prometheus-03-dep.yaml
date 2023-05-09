@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nuvolaris-prometheus-server
+  namespace: nuvolaris
+  labels:
+    app.kubernetes.io/component: server
+    app.kubernetes.io/instance: nuvolaris-prometheus
+    app.kubernetes.io/name: prometheus
+spec:
+  replicas: 1  
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: server
+      app.kubernetes.io/instance: nuvolaris-prometheus
+      app.kubernetes.io/name: prometheus
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: server
+        app.kubernetes.io/instance: nuvolaris-prometheus
+        app.kubernetes.io/name: prometheus
+    spec:
+      serviceAccount: nuvolaris-prometheus-server
+      serviceAccountName: nuvolaris-prometheus-server
+      terminationGracePeriodSeconds: 300
+      containers:
+      - name: prometheus-server-configmap-reload
+        args:
+        - --watched-dir=/etc/config
+        - --reload-url=http://127.0.0.1:9999/-/reload
+        image: quay.io/prometheus-operator/prometheus-config-reloader:v0.65.1
+        imagePullPolicy: IfNotPresent        
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/config
+          name: config-volume
+          readOnly: true
+      - name: prometheus-server
+        args:
+        - --storage.tsdb.retention.time=24h
+        - --config.file=/etc/config/prometheus.yml
+        - --storage.tsdb.path=/data
+        - --web.console.libraries=/etc/prometheus/console_libraries
+        - --web.console.templates=/etc/prometheus/consoles
+        - --web.enable-lifecycle
+        - --web.enable-admin-api
+        - --web.listen-address=:9999
+        image: quay.io/prometheus/prometheus:v2.43.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: web
+          containerPort: 9999
+          protocol: TCP
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /-/healthy
+            port: 9999
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 10
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /-/ready
+            port: 9999
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 4        
+        volumeMounts:
+        - mountPath: /etc/config
+          name: config-volume
+        - mountPath: /data
+          name: storage-volume
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: nuvolaris-prometheus-server
+        name: config-volume
+      - name: storage-volume
+        persistentVolumeClaim:
+          claimName: nuvolaris-prometheus-server
