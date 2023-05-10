@@ -21,3 +21,27 @@ tasks:
   cleanup-minimal:
     - helm uninstall nuvolaris-prometheus
 
+
+  deploy:prometheus:
+    - kubectl apply -f prometheus
+
+  deploy:alertmanager:
+    - kubectl apply -f alertmanager
+
+  deploy:nodexporter:
+    - kubectl apply -f nodeexporter
+
+  deploy:kubestate:
+    - kubectl apply -f kubestate
+
+
+  deploy-minimal:
+    - kubectl apply -f prometheus
+    - kubectl apply -f alertmanager
+    - kubectl apply -f kubestate
+
+  clean: 
+    - kubectl delete -f alertmanager
+    - kubectl delete -f prometheus   
+    - kubectl delete -f kubestate
+    - kubectl delete -f nodeexporter

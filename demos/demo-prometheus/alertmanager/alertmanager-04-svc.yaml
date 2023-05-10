@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nuvolaris-prometheus-alertmanager
+  namespace: nuvolaris
+  labels:
+    app.kubernetes.io/instance: nuvolaris-prometheus    
+    app.kubernetes.io/name: alertmanager
+spec:
+  sessionAffinity: None
+  type: ClusterIP
+  internalTrafficPolicy: Cluster
+  ports:
+  - name: http
+    port: 9093
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/instance: nuvolaris-prometheus
+    app.kubernetes.io/name: alertmanager
