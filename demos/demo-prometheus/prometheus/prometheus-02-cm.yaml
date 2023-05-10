@@ -38,7 +38,29 @@ data:
     - job_name: kafka
       static_configs:
       - targets:
-        - kafka:9071              
+        - kafka:9071
+    - job_name: 'kube-state-metrics'
+      static_configs:
+      - targets: ['nuvolaris-prometheus-kube-state-metrics.nuvolaris.svc.cluster.local:8080']        
+    - job_name: 'kubelet'
+      kubernetes_sd_configs:
+      - role: node
+      scheme: https
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true  # Required with Minikube.
+      authorization:
+          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token         
+    - job_name: 'cadvisor'
+      kubernetes_sd_configs:
+      - role: node
+      scheme: https
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true  # Required with Minikube.
+      authorization:
+          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token         
+      metrics_path: /metrics/cadvisor                                                
   recording_rules.yml: |
     {}
   rules: |

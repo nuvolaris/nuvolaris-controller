@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nuvolaris-prometheus-alertmanager
+  namespace: nuvolaris
+  labels:
+    app.kubernetes.io/component: server
+    app.kubernetes.io/instance: nuvolaris-prometheus
+    app.kubernetes.io/name: alertmanager
+spec:  
+  replicas: 1  
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: server
+      app.kubernetes.io/instance: nuvolaris-prometheus
+      app.kubernetes.io/name: alertmanager
+  strategy:
+    type: Recreate  
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: server
+        app.kubernetes.io/instance: nuvolaris-prometheus
+        app.kubernetes.io/name: alertmanager        
+    spec:
+      serviceAccount: nuvolaris-prometheus-alertmanager
+      serviceAccountName: nuvolaris-prometheus-alertmanager
+      terminationGracePeriodSeconds: 300    
+      automountServiceAccountToken: true
+      containers:
+      - args:
+        - --storage.path=/alertmanager
+        - --config.file=/etc/alertmanager/alertmanager.yml
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        image: quay.io/prometheus/alertmanager:v0.25.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: http
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: alertmanager
+        ports:
+        - containerPort: 9093
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: http
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/alertmanager
+          name: config
+        - mountPath: /alertmanager
+          name: storage-volume
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: nuvolaris-prometheus-alertmanager
+        name: config
+      - name: storage-volume
+        persistentVolumeClaim:
+          claimName: storage-nuvolaris-prometheus-alertmanager
