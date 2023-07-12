@@ -38,11 +38,6 @@ tasks:
   setup: 
     silent: true
 
-  origin:
-    - git fetch --all
-    - git checkout origin/main -B main
-    - cd openwhisk ; task origin
-
   image-tag:
     - git tag -d $(git tag)
     - git tag -f {{.BASETAG}}.$(date +%y%m%d%H){{.S}}
