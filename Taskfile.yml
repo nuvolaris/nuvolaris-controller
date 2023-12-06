@@ -21,13 +21,14 @@ dotenv:
   - .env
 
 vars:
-  BASETAG: 0.3.0-morpheus
+  BASETAG: 3.0.0-beta
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null || git rev-parse --short HEAD
-  CONTROLLER_IMAGE: ghcr.io/nuvolaris/openwhisk-controller
-  INVOKER_IMAGE: ghcr.io/nuvolaris/openwhisk-invoker
-  STANDALONE_IMAGE: ghcr.io/nuvolaris/openwhisk-standalone
-  COMMON_IMAGE: ghcr.io/nuvolaris/openwhisk-common
+
+  CONTROLLER_IMAGE: ghcr.io/$GITHUB_USER/openwhisk-controller
+  INVOKER_IMAGE: ghcr.io/$GITHUB_USER/openwhisk-invoker
+  STANDALONE_IMAGE: ghcr.io/$GITHUB_USER/openwhisk-standalone
+  COMMON_IMAGE: ghcr.io/$GITHUB_USER/openwhisk-common
   ACT: "nothing"
   S: ""
 
@@ -100,8 +101,8 @@ tasks:
     - |-
       echo "***" {{.ACT}} for {{.IMG}} in {{.DIR}}
       case "{{.ACT}}" in
-      (build) 
-      docker build {{.DIR}} -t {{.IMG}} --build-arg BASE={{.BASE}}
+      (build)
+      docker build {{.DIR}} -t {{.IMG}} --build-arg BASE={{.BASE}} --push
       ;;
       (buildx) 
       docker buildx build --platform linux/amd64,linux/arm64 --build-arg BASE={{.BASE}} -t {{.IMG}} {{.DIR}}
