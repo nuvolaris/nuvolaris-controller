@@ -1,0 +1,156 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+#comm s'usa sta robba.
+# nuv -task export_apisix ed ottieni la lista della roba nella folder della variabile TPL.
+# nuv -task export_apisix -F deployment ed ottieni il apisix_deployment.yaml
+
+
+version: '3'
+
+vars:
+  TPL: 
+
+tasks:
+  clone:
+    cmds:
+      - git clone https://github.com/apache/apisix-helm-chart
+      - mkdir export
+
+  generic_export:
+    cmds:
+      - | 
+        if test -z "{{.F}}"
+        then ls "{{.TPL}}/templates" ; echo select with "F=<file>" no .yaml
+        else helm template nuvolaris {{.TPL}} \
+        -n nuvolaris -f values.yml \
+        -s  templates/{{.F}}.yaml | tee export/{{.F}}.yaml
+        fi
+    vars:
+      TPL: apisix-helm-chart/charts/apisix
+
+  export_values_apisix:
+    cmds:
+      - cp "{{.TPL}}/values.yaml" apisix_values.yml
+    vars:
+      TPL: apisix-helm-chart/charts/apisix
+
+  export_values_etcd:
+    cmds:
+      - cp "{{.TPL}}/values.yaml" etcd_values.yml
+    vars:
+      TPL: etcd
+
+  export_values_dashboard:
+    cmds:
+      - cp "{{.TPL}}/values.yaml" dashboard_values.yml
+    vars:
+      TPL: apisix-helm-chart/charts/apisix-dashboard
+
+
+  export_apisix:
+    cmds:
+      - | 
+        helm template nuvolaris {{.TPL}} \
+        -n nuvolaris -f apisix_values.yml \
+        -s  templates/deployment.yaml | tee export/apisix_deployment.yaml
+        
+    vars:
+      TPL: apisix-helm-chart/charts/apisix
+
+  export_svc_apisix:
+    cmds:
+      - | 
+        helm template nuvolaris {{.TPL}} \
+        -n nuvolaris -f apisix_values.yml \
+        -s  templates/configmap.yaml | tee export/apisix_svc.yaml
+        
+    vars:
+      TPL: apisix-helm-chart/charts/apisix
+
+  export_svc_apisix_admin:
+    cmds:
+      - | 
+        helm template nuvolaris {{.TPL}} \
+        -n nuvolaris -f apisix_values.yml \
+        -s  templates/service-admin.yaml | tee export/apisix_svc_admin.yaml
+        
+    vars:
+      TPL: apisix-helm-chart/charts/apisix
+
+  export_etcd:
+    cmds:
+      - | 
+        helm template nuvolaris {{.TPL}} \
+        -n nuvolaris -f etcd_values.yml \
+        -s  templates/statefulset.yaml | tee export/etcd_deployment.yaml
+
+  export_svc_etcd:
+    cmds:
+      - | 
+        helm template nuvolaris {{.TPL}} \
+        -n nuvolaris -f etcd_values.yml \
+        -s  templates/svc.yaml | tee export/etcd_svc.yaml
+        
+    vars:
+      TPL: etcd
+
+  export_dashboard:
+    cmds:
+      - | 
+        helm template nuvolaris {{.TPL}} \
+        -n nuvolaris -f dashboard_values.yml \
+        -s  templates/deployment.yaml | tee export/dashboard_deployment.yaml
+        
+    vars:
+      TPL: apisix-helm-chart/charts/apisix-dashboard
+
+  export_configmap_dashboard:
+    cmds:
+      - | 
+        helm template nuvolaris {{.TPL}} \
+        -n nuvolaris -f dashboard_values.yml \
+        -s  templates/configmap.yaml | tee export/dashboard_configmap.yaml
+        
+    vars:
+      TPL: apisix-helm-chart/charts/apisix-dashboard
+
+  export_svc_dashboard:
+    cmds:
+      - | 
+        helm template nuvolaris {{.TPL}} \
+        -n nuvolaris -f dashboard_values.yml \
+        -s  templates/service.yaml | tee export/dashboard_svc.yaml
+        
+    vars:
+      TPL: apisix-helm-chart/charts/apisix-dashboard
+
+  export_all:
+    cmds:
+      - export_apisix
+      - export_svc_apisix
+      - export_svc_apisix_admin
+      - export_etcd
+      - export_svc_etcd
+      - export_dashboard
+      - export_svc_apisix_dashboard
+  
+  export_all_values:
+    cmds:
+      - export_values_apisix
+      - export_values_etcd
+      - export_values_dashboard

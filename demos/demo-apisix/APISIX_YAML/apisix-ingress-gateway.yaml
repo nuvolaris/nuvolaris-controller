@@ -1,0 +1,59 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-issuer
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: 48m
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+  name: apisixgateway
+  namespace: nuvolaris
+spec:
+  rules:
+  - host: nuvolaris.dynamicsconsulting.it
+    http:
+      paths:
+      - backend:
+          service:
+            name: apisix-gateway
+            port:
+              number: 9081
+        path: /gateway(/|$)(.*)
+        pathType: ImplementationSpecific
+  tls:
+  - hosts:
+    - nuvolaris.dynamicsconsulting.it
+    secretName: nuvolaris-crt
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-issuer
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: 48m
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+  name: apisixdashboard
+  namespace: nuvolaris
+spec:
+  rules:
+  - host: admin.nuvolaris.dynamicsconsulting.it
+    http:
+      paths:
+      - backend:
+          service:
+            name: apisix-dashboard
+            port:
+              number: 9011
+        path: /
+        pathType: ImplementationSpecific
+  tls:
+  - hosts:
+    - admin.nuvolaris.dynamicsconsulting.it
+    secretName: admin-nuvolaris-crt
