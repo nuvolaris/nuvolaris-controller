@@ -373,3 +373,7 @@ Il Passo 7 illustra come utilizzare la route di demo che hai configurato in APIS
 - **Errore nella Risposta dalla Route di Demo**: Se la route di demo non risponde come previsto, verifica la configurazione della route in APISIX e assicurati che l'azione OpenWhisk sia configurata correttamente.
 
 Questo esempio illustra come utilizzare una route protetta da JWT in APISIX, integrata con un'azione OpenWhisk, per creare un'API funzionale e sicura.
+
+### changelog ###
+
+- **Problemi con i plugin soprattutto body-transformer**: è stata modificato lo yaml di deploy della dashboard includendo il file schema.json, che non viene regolarmente scaricato da controller api (anch'essa abilitata in apisix_etcd.yaml alla porta 9290), prende quindi quello di default che non contiene tutti i plugin. Questa configurazione risolve, ma in caso di upgrade, è necessario riscaricare il json sopo un port-forward sulla 9290 localhost:9290/vi/schema e sostituirlo nello yaml del dashboard
