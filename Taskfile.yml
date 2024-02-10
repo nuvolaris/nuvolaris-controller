@@ -24,11 +24,12 @@ vars:
   BASETAG: 3.1.0-mastrogpt
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null || git rev-parse --short HEAD
-
-  CONTROLLER_IMAGE: ghcr.io/$GITHUB_USER/openwhisk-controller
-  INVOKER_IMAGE: ghcr.io/$GITHUB_USER/openwhisk-invoker
-  STANDALONE_IMAGE: ghcr.io/$GITHUB_USER/openwhisk-standalone
-  COMMON_IMAGE: ghcr.io/$GITHUB_USER/openwhisk-common
+  GHUSER:
+    sh: echo "${GITHUB_USER:-nuvolaris}"
+  CONTROLLER_IMAGE: ghcr.io/{{.GHUSER}}/openwhisk-controller
+  INVOKER_IMAGE: ghcr.io/{{.GHUSER}}/openwhisk-invoker
+  STANDALONE_IMAGE: ghcr.io/{{.GHUSER}}/openwhisk-standalone
+  COMMON_IMAGE: ghcr.io/{{.GHUSER}}/openwhisk-common
   ACT: "nothing"
   S: ""
 
