@@ -39,6 +39,7 @@ header:
     - '**/*.md.gotmpl'
     - '**/*.json'
     - '**/default.conf'
+    - '**/*.txt'
 
 
  
