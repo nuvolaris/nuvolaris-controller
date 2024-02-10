@@ -21,7 +21,7 @@ dotenv:
   - .env
 
 vars:
-  BASETAG: 3.0.0-beta
+  BASETAG: 3.1.0-mastrogpt
   TAG:
     sh: git describe --tags --abbrev=0 2>/dev/null || git rev-parse --short HEAD
 
@@ -77,9 +77,12 @@ tasks:
       - test -f ../standalone/lib/openwhisk-standalone.jar
 
   clean:
+    ignore_error: true
+    cmds:
     - rm standalone/lib/openwhisk-standalone.jar
     - rm openwhisk/core/invoker/build/distributions/invoker.tar
     - rm openwhisk/core/controller/build/distributions/controller.tar
+    - docker buildx rm nuvolaris
 
   compile:
     - task: compile:controller

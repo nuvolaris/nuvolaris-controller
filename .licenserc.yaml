@@ -33,6 +33,12 @@ header:
     - '_*'
     - '.env.dist'
     - '.tag'
+    - 'Chart.lock'
+    - '.helmignore'
+    - '.gitkeep'
+    - '**/*.md.gotmpl'
+    - '**/*.json'
+
 
  
 dependency:
