@@ -38,6 +38,7 @@ header:
     - '.gitkeep'
     - '**/*.md.gotmpl'
     - '**/*.json'
+    - '**/default.conf'
 
 
  
