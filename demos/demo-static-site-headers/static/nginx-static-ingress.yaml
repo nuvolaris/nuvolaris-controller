@@ -15,35 +15,27 @@
 # specific language governing permissions and limitations
 # under the License.
 #
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: dns-ingress
-  namespace: kube-system
+  name: nginx-http-ingress
+  namespace: minio
   annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    # it is essential this is set to public in accordance to the microk8s ingress add-on setup (similarly as the ClusterIssuer)
-    kubernetes.io/ingress.class: "public"
+      kubernetes.io/ingress.class: public
+      nginx.ingress.kubernetes.io/proxy-body-size: "48m"
+      nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
 spec:
-  tls:
-    - hosts:
-      - 54.196.247.123.nip.io
-      secretName: letsencrypt-prod
   rules:
-  - host: 3.88.57.54.nip.io
-    http:
+    - host: "*.static.44.203.144.96.nip.io"
+      http:
         paths:
-        - pathType: Prefix
-          path: "/echo1"
-          backend:
-            service:
-              name: echo1
-              port:
-                number: 80
-        - pathType: Prefix
-          path: "/echo2"
-          backend:
-            service:
-              name: echo2
-              port:
-                number: 80
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx-svc
+                port: 
+                  number: 80                    

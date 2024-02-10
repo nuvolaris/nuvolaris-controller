@@ -1,0 +1,60 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+---
+apiVersion: apps/v1 #  for k8s versions before 1.9.0 use apps/v1beta2  and before 1.8.0 use extensions/v1beta1
+kind: Deployment
+metadata:
+  name: minio-test-dep
+  namespace: minio
+spec:
+  selector:
+    matchLabels:
+      app: minio-test-app
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: minio-test-app
+    spec:
+      serviceAccountName: minio-sa
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: minio-pvc-claim
+      containers:
+      - name: minio
+        image: quay.io/minio/minio:RELEASE.2023-01-20T02-05-44Z
+        command:
+        - /bin/bash
+        - -c
+        args: 
+        - minio server /storage --address :9001 --console-address :9091
+        env:
+        - name: MINIO_ROOT_USER
+          value: minioadmin
+        - name: MINIO_ROOT_PASSWORD
+          value: 2q9RmtwiqyWxpjsEFb5C
+        ports:
+        - containerPort: 9001
+          hostPort: 9001
+        - containerPort: 9091
+          hostPort: 9091        
+        volumeMounts:
+        - name: storage # must match the volume name, above
+          mountPath: "/storage"

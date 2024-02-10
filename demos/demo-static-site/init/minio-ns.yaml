@@ -1,0 +1,190 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: minio
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: minio-sa
+  namespace: minio
+  labels:
+    app: minio
+---
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: minio-cr
+  labels:
+    app: minio-cr
+rules:
+
+# read nodes storageclasses ingressclasses
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "watch"]
+
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get","list", "watch","create", "update", "patch", "delete"]
+
+- apiGroups: ["storage.k8s.io"]
+  resources: ["storageclasses"]
+  verbs: ["get", "list", "watch"]
+
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingressclasses"]
+  verbs: ["get", "list", "watch"]
+
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]  
+
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterroles","clusterrolebindings","rolebindings","roles"]
+  verbs: ["get", "list", "watch","create", "update", "patch", "delete"]
+
+# tls specific
+- apiGroups: ["cert-manager.io"]
+  resources: ["certificates"]
+  verbs: ["get","list","watch"]
+
+- apiGroups: ["cert-manager.io"]
+  resources: ["issuers"]
+  verbs: ["update","patch","get","list","watch","create","delete","deletecollection"] 
+
+- apiGroups: ["cert-manager.io"]
+  resources: ["issuers/status"]
+  verbs: ["update","patch"]    
+
+- apiGroups: ["cert-manager.io"]
+  resources: ["clusterissuers"]
+  verbs: ["create","update","delete","patch","get","list","watch","deletecollection"]
+
+- apiGroups: ["cert-manager.io"]
+  resources: ["clusterissuers/status"]
+  verbs: ["create","update","delete","patch","get","list","watch"]
+
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get","list","watch","create","update","delete"]
+
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses/status"]
+  verbs: ["update","patch"]
+
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get","list","watch"]
+
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch"]  
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: minio-crb
+  namespace: minio
+  labels:
+    app: minio-crb
+subjects:
+- kind: ServiceAccount
+  namespace: minio
+  name:  minio-sa
+roleRef:
+  kind: ClusterRole
+  name: minio-cr
+  apiGroup: rbac.authorization.k8s.io
+---
+
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: minio-role
+  namespace: minio
+  labels:
+    app: minio-role
+rules:
+
+# edit secrets cm po svc pvc ingresses serviceaccounts events
+- apiGroups: [""]
+  resources: ["configmaps", "secrets", "pods", "services", "persistentvolumeclaims", "ingresses","serviceaccounts","events"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+- apiGroups: [""]
+  resources: ["services/status"]
+  verbs: ["update", "patch"]
+
+# read logs
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get", "list"]
+
+# edit deployments daemonset statefulset
+- apiGroups: ["extensions", "apps"]
+  resources: ["deployments", "daemonsets", "statefulsets" ]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# edit jobs
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# edit nuvolaris crd
+- apiGroups: ["nuvolaris.org"]
+  resources: ["whisks","whisks/status"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# networking.k8s.io
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# required for mongodb
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["roles","rolebindings"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+- apiGroups: ["mongodbcommunity.mongodb.com"]
+  resources: ["mongodbcommunity","mongodbcommunity/finalizers","mongodbcommunity/spec","mongodbcommunity/status"]
+  verbs: ["get","patch","list","update","watch","create","delete"]
+
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: minio-rb
+  namespace: minio
+  labels:
+    app: minio-rb
+subjects:
+- kind: ServiceAccount
+  namespace: minio
+  name:  minio-sa
+roleRef:
+  kind: Role
+  name: minio-role
+  apiGroup: rbac.authorization.k8s.io
+
+

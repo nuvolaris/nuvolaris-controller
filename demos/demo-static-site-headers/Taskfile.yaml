@@ -1,0 +1,114 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+version: '3'
+
+vars:
+  CMD: apply
+
+dotenv:
+  - .env  
+
+env:
+  NGINX_IMG_TAG: 
+    sh: git describe --tags --abbrev=0 2>/dev/null || git rev-parse --short HEAD
+  NGINX_IMG_NAME: ghcr.io/francescotimperi/nginx-minio
+
+tasks:
+  minio:alias:
+    - mc alias set testminio https://minio.static.44.203.144.96.nip.io/ minioadmin 2q9RmtwiqyWxpjsEFb5C
+  # Docker image
+  docker-login: >
+    echo $GITHUB_TOKEN | docker login ghcr.io -u $GITHUB_USER --password-stdin
+
+  docker-build:
+    cmds:
+      - "docker build . -t {{.NGINX_IMG_NAME}}:{{.NGINX_IMG_TAG}}"
+
+  build-and-load:
+    - task: docker-build
+    - > 
+      kind load docker-image {{.NGINX_IMG_NAME}}:{{.NGINX_IMG_TAG}} --name=nuvolaris
+
+  build-and-push:
+    - task: docker-build
+    - task: docker-login
+    - docker push {{.NGINX_IMG_NAME}}:{{.NGINX_IMG_TAG}} 
+
+  # Minio server setup  
+
+  # Minio server setup  
+  init:
+     - kubectl {{.CMD}} -f init
+
+  init:delete:
+     - task init CMD=delete
+
+  minio:
+     - kubectl {{.CMD}} -f minio
+
+  minio:delete: task minio CMD=delete
+
+  watch: watch kubectl -n minio get deploy,pod,service,job,pvc,ingress
+    
+  clean:all:
+    cmds:
+    - task: minio:delete
+    - task: init:delete
+
+  clean:static:
+    cmds:
+    - kubectl -n minio delete -f static    
+
+  deploy:content:
+    cmds:
+      - mc mb testminio/namespace/static1
+      - mc mb testminio/namespace/static2
+      - mc mb testminio/namespace/static3
+      - mc mb testminio/namespace2/static1
+      - mc mb testminio/namespace2/static2
+      - mc mb testminio/namespace2/static3      
+      - mc cp -r content/ testminio/namespace/static1
+      - mc cp -r content/ testminio/namespace/static2
+      - mc cp -r content/ testminio/namespace/static3
+      - mc cp -r content/ testminio/namespace2/static1
+      - mc cp -r content/ testminio/namespace2/static2
+      - mc cp -r content/ testminio/namespace2/static3      
+      - mc cp nginx/index.html testminio/namespace
+      - mc anonymous -r set download testminio/namespace
+      - mc anonymous -r set download testminio/namespace2
+
+  setup:
+    cmds:
+      - task: init
+      - task: minio
+
+  deploy:static:
+    cmds:
+      - task: build-and-push
+      - |-
+        envsubst < static/nginx-static-deployment.yaml | kubectl -n minio apply -f -
+        kubectl -n minio apply -f static/nginx-static-service.yaml
+        kubectl -n minio apply -f static/nginx-static-ingress.yaml
+      - task: deploy:content  
+    env:
+      STATIC_CONTENT_IMAGE: "{{.NGINX_IMG_NAME}}:{{.NGINX_IMG_TAG}}"
+
+  shell:
+    - kubectl -n minio exec --stdin --tty {{.POD}} -- /bin/sh             
+  
+  
