@@ -33,3 +33,15 @@ tasks:
       fi
     vars:
       TPL: openwhisk-deploy-kube/helm/openwhisk
+
+  export-enterprise:
+    cmds:
+    - | 
+      if test -z "{{.F}}"
+      then ls "{{.TPL}}/templates" ; echo select with "F=<file>" no .yaml
+      else helm template nuvolaris {{.TPL}} \
+      -n nuvolaris -f my-ent-cluster.yaml \
+      -s  templates/{{.F}}.yaml | tee export/{{.F}}.yaml
+      fi
+    vars:
+      TPL: openwhisk-deploy-kube/helm/openwhisk      
