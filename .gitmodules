@@ -18,6 +18,8 @@
 [submodule "openwhisk"]
 	path = openwhisk
 	url = https://github.com/nuvolaris/openwhisk
+	branch = nuvolaris
 [submodule "openwhisk-utilities"]
 	path = openwhisk-utilities
 	url = https://github.com/apache/openwhisk-utilities
+	branch = master
