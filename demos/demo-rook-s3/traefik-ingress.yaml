@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    nginx.ingress.kubernetes.io/proxy-body-size: 1024m
+    traefik.ingress.kubernetes.io/transport.respondingTimeouts.idleTimeout: "600"
+    traefik.ingress.kubernetes.io/transport.respondingTimeouts.readTimeout: "600"
+    traefik.ingress.kubernetes.io/transport.respondingTimeouts.writeTimeout: "600"
+  name: rook-s3
+  namespace: rook-ceph
+spec:
+  rules:
+  - host: rook-s3.metlabs.cloud
+    http:
+      paths:
+      - backend:
+          service:
+            name: rook-ceph-rgw-my-store
+            port:
+              number: 80
+        path: /
+        pathType: Prefix

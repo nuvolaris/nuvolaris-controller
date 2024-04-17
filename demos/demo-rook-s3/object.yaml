@@ -1,0 +1,28 @@
+apiVersion: ceph.rook.io/v1
+kind: CephObjectStore
+metadata:
+  name: my-store
+  namespace: rook-ceph
+spec:
+  metadataPool:
+    failureDomain: host
+    replicated:
+      size: 3
+  dataPool:
+    failureDomain: host
+    # For production it is recommended to use more chunks, such as 4+2 or 8+4
+    erasureCoded:
+      dataChunks: 2
+      codingChunks: 1
+  preservePoolsOnDelete: true
+  gateway:
+    sslCertificateRef:
+    port: 80
+    # securePort: 443
+    instances: 1
+    #externalRgwEndpoints:
+    #  - ip: "192.168.122.1"
+    #service:
+    #  annotations:
+    #    # Add the bucket DNS names
+    #    external-dns.alpha.kubernetes.io/hostname: rook-bucket.metlabs.cloud
