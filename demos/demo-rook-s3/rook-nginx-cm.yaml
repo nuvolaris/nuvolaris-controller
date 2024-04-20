@@ -1,0 +1,51 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+apiVersion: v1
+data:
+  default.conf: "server {\n  listen       8080;\n  server_name  localhost;\n\n  client_max_body_size
+    1000M;\n\n  #access_log  /var/log/nginx/host.access.log  main;\n\n  #location
+    / {\n  #    root   /usr/share/nginx/html;\n  #    index  index.html index.htm;\n
+    \ #}\n\n  location / {          \n      rewrite ^/$ ${request_uri}index.html break;
+    \         \n      rewrite ^([^.]*[^/])$ $1/;\n      rewrite (.*)/$ $1/index.html;
+    \                   \n\n      proxy_hide_header     x-amz-id-2;\n      proxy_hide_header
+    \    x-amz-meta-etag;\n      proxy_hide_header     x-amz-request-id;\n      proxy_hide_header
+    \    x-amz-meta-server-side-encryption;\n      proxy_hide_header     x-amz-server-side-encryption;
+    \       \n      proxy_set_header Host $http_host;\n\n      proxy_pass http://rook-ceph-rgw-my-store.rook-ceph.svc.cluster.local:80/;\n
+    \     \n      error_page 301 404 = @spa;\n      proxy_intercept_errors on;   \n
+    \     proxy_redirect     off;\n  }  \n\n  location @spa {\n    rewrite (.*)-web(.*)
+    $1-web/index.html;\n    proxy_pass http://rook-ceph-rgw-my-store.rook-ceph.svc.cluster.local:80;\n
+    \   error_page 404 = /404.html;\n    proxy_intercept_errors on;\n  }           \n\n
+    \ error_page  404              /404.html;\n\n  location = /404.html {\n      root
+    \  /usr/share/nginx/html;\n  }\n\n  # redirect server error pages to the static
+    page /50x.html\n  #\n  error_page   500 502 503 504  /50x.html;\n  location =
+    /50x.html {\n      root   /usr/share/nginx/html;\n  }\n\n}\n"
+  nginx.conf: "worker_processes  auto;\n\nerror_log  /var/log/nginx/error.log notice;\npid
+    \       /tmp/nginx.pid;\n\nevents {\n    worker_connections  1024;\n}\n\nhttp
+    {\n    proxy_temp_path /tmp/proxy_temp;\n    client_body_temp_path /tmp/client_temp;\n
+    \   fastcgi_temp_path /tmp/fastcgi_temp;\n    uwsgi_temp_path /tmp/uwsgi_temp;\n
+    \   scgi_temp_path /tmp/scgi_temp;\n    \n    client_max_body_size 1000M;\n\n
+    \   include       /etc/nginx/mime.types;\n    default_type  application/octet-stream;\n\n
+    \   log_format  main  '$remote_addr - $remote_user [$time_local] \"$request\"
+    '\n                      '$status $body_bytes_sent \"$http_referer\" '\n                      '\"$http_user_agent\"
+    \"$http_x_forwarded_for\" - \"$http_host\"';\n\n    access_log  /var/log/nginx/access.log
+    \ main;\n\n    sendfile        on;\n    #tcp_nopush     on;\n\n    keepalive_timeout
+    \ 65;\n\n    #gzip  on;\n\n    include /etc/nginx/conf.d/*.conf;\n}      "
+kind: ConfigMap
+metadata:
+  name: rook-static-conf-cm
+  namespace: nuvolaris
