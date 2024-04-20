@@ -1,0 +1,8 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: rook-static-ingress-add-prefix
+  namespace: nuvolaris
+spec:
+  addPrefix:
+    prefix: /ceph-bkt-57332554-f148-44e0-a988-d55773f79d8a

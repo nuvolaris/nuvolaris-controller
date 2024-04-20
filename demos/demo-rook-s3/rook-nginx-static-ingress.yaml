@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    nginx.ingress.kubernetes.io/proxy-body-size: 1024m
+    traefik.ingress.kubernetes.io/router.middlewares: nuvolaris-rook-static-ingress-add-prefix@kubernetescrd
+    traefik.ingress.kubernetes.io/transport.respondingTimeouts.idleTimeout: "600"
+    traefik.ingress.kubernetes.io/transport.respondingTimeouts.readTimeout: "600"
+    traefik.ingress.kubernetes.io/transport.respondingTimeouts.writeTimeout: "600"
+  name: apihost-static-rook-ingress
+  namespace: nuvolaris
+spec:
+  rules:
+  - host: rook.metlabs.cloud
+    http:
+      paths:
+      - backend:
+          service:
+            name: rook-static-svc
+            port:
+              number: 8080
+        path: /
+        pathType: Prefix
