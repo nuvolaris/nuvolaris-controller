@@ -7,7 +7,7 @@ Then you can check providing the prefixes to check (as I assume we know them )""
 
 bash check.sh <prefx> <prefix>...
 
-Example
+Example:
 
 ```
 bash fill.sh mike 100
