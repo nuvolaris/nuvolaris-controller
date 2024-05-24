@@ -22,4 +22,4 @@ metadata:
   namespace: nuvolaris
 spec:
   addPrefix:
-    prefix: /ceph-bkt-57332554-f148-44e0-a988-d55773f79d8a
+    prefix: /nuvolaris-ceph-bkt-910b63ee-2683-446f-a16a-2ec8f0adaf27

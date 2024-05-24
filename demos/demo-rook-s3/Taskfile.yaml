@@ -15,26 +15,42 @@
 # specific language governing permissions and limitations
 # under the License.
 
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  annotations:
-    kubernetes.io/ingress.class: traefik
-    nginx.ingress.kubernetes.io/proxy-body-size: 1024m
-    traefik.ingress.kubernetes.io/transport.respondingTimeouts.idleTimeout: "600"
-    traefik.ingress.kubernetes.io/transport.respondingTimeouts.readTimeout: "600"
-    traefik.ingress.kubernetes.io/transport.respondingTimeouts.writeTimeout: "600"
-  name: rook-s3
-  namespace: rook-ceph
-spec:
-  rules:
-  - host: rook-s3.metlabs.cloud
-    http:
-      paths:
-      - backend:
-          service:
-            name: rook-ceph-rgw-my-store
-            port:
-              number: 80
-        path: /
-        pathType: Prefix
+version: '3'
+
+dotenv: 
+  - .env
+
+tasks:
+
+  default:
+    - task --list-all
+
+  get:config:
+    desc: "Get the configuration"
+    cmds:
+      - echo "" > .env
+      - bash constants.sh
+      - cat .env
+
+  test:
+    desc: "Client for testing Connection"
+    silent: true
+    cmds:
+      - s3cmd put ./test/index.html s3://${BUCKET_NAME}
+      - python test/client.py
+
+  deploy:rook:
+    desc: "Deploy Rook"
+    cmds:
+      - kubectl apply -f ceph/
+  
+  deploy:ingress:
+    desc: "Deploy Ingress"
+    cmds:
+      - kubectl apply -f ingress/
+      - aws s3api put-bucket-policy --policy file://s3-policy.json --endpoint-url=https://rook-s3.metlabs.cloud --bucket ${BUCKET_NAME}
+
+  undeploy:
+    desc: "Undeploy all"
+    cmds:
+      - kubectl delete -f ingress/ -f ceph/

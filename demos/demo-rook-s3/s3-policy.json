@@ -6,8 +6,8 @@
             "Principal": "*",
             "Action": "s3:GetObject",
             "Resource": [
-                "arn:aws:s3:::ceph-bkt-57332554-f148-44e0-a988-d55773f79d8a/*",
-                "arn:aws:s3:::ceph-bkt-57332554-f148-44e0-a988-d55773f79d8a"
+                "arn:aws:s3:::nuvolaris-ceph-bkt-910b63ee-2683-446f-a16a-2ec8f0adaf27/*",
+                "arn:aws:s3:::nuvolaris-ceph-bkt-910b63ee-2683-446f-a16a-2ec8f0adaf27"
             ]
         }
     ]

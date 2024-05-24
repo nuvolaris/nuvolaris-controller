@@ -23,5 +23,5 @@ metadata:
 provisioner: rook-ceph.ceph.rook.io/bucket
 reclaimPolicy: Delete
 parameters:
-  objectStoreName: my-store
+  objectStoreName: nuvolaris-object-store
   objectStoreNamespace: rook-ceph
