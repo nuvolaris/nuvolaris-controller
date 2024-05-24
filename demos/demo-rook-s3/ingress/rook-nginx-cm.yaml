@@ -25,10 +25,10 @@ data:
     \                   \n\n      proxy_hide_header     x-amz-id-2;\n      proxy_hide_header
     \    x-amz-meta-etag;\n      proxy_hide_header     x-amz-request-id;\n      proxy_hide_header
     \    x-amz-meta-server-side-encryption;\n      proxy_hide_header     x-amz-server-side-encryption;
-    \       \n      proxy_set_header Host $http_host;\n\n      proxy_pass http://rook-ceph-rgw-my-store.rook-ceph.svc.cluster.local:80/;\n
+    \       \n      proxy_set_header Host $http_host;\n\n      proxy_pass http://rook-ceph-rgw-nuvolaris-object-store.rook-ceph.svc.cluster.local:80/;\n
     \     \n      error_page 301 404 = @spa;\n      proxy_intercept_errors on;   \n
     \     proxy_redirect     off;\n  }  \n\n  location @spa {\n    rewrite (.*)-web(.*)
-    $1-web/index.html;\n    proxy_pass http://rook-ceph-rgw-my-store.rook-ceph.svc.cluster.local:80;\n
+    $1-web/index.html;\n    proxy_pass http://rook-ceph-rgw-nuvolaris-object-store.rook-ceph.svc.cluster.local:80;\n
     \   error_page 404 = /404.html;\n    proxy_intercept_errors on;\n  }           \n\n
     \ error_page  404              /404.html;\n\n  location = /404.html {\n      root
     \  /usr/share/nginx/html;\n  }\n\n  # redirect server error pages to the static

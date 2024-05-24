@@ -33,7 +33,7 @@ spec:
       paths:
       - backend:
           service:
-            name: rook-ceph-rgw-my-store
+            name: rook-ceph-rgw-nuvolaris-object-store
             port:
               number: 80
         path: /

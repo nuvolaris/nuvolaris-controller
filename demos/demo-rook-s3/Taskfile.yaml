@@ -1,0 +1,39 @@
+version: '3'
+
+dotenv: 
+  - .env
+
+tasks:
+
+  default:
+    - task --list-all
+
+  get:config:
+    desc: "Get the configuration"
+    cmds:
+      - echo "" > .env
+      - bash constants.sh
+      - cat .env
+
+  test:
+    desc: "Client for testing Connection"
+    silent: true
+    cmds:
+      - s3cmd put ./test/index.html s3://${BUCKET_NAME}
+      - python test/client.py
+
+  deploy:rook:
+    desc: "Deploy Rook"
+    cmds:
+      - kubectl apply -f ceph/
+  
+  deploy:ingress:
+    desc: "Deploy Ingress"
+    cmds:
+      - kubectl apply -f ingress/
+      - aws s3api put-bucket-policy --policy file://s3-policy.json --endpoint-url=https://rook-s3.metlabs.cloud --bucket ${BUCKET_NAME}
+
+  undeploy:
+    desc: "Undeploy all"
+    cmds:
+      - kubectl delete -f ingress/ -f ceph/

@@ -15,11 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-apiVersion: objectbucket.io/v1alpha1
-kind: ObjectBucketClaim
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
 metadata:
-  name: ceph-bucket
-  namespace: nuvolaris
-spec:
-  generateBucketName: ceph-bkt
-  storageClassName: rook-ceph-bucket
+   name: rook-ceph-bucket
+# Change "rook-ceph" provisioner prefix to match the operator namespace if needed
+provisioner: rook-ceph.ceph.rook.io/bucket
+reclaimPolicy: Delete
+parameters:
+  objectStoreName: nuvolaris-object-store
+  objectStoreNamespace: rook-ceph

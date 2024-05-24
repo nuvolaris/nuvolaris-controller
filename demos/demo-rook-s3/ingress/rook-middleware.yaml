@@ -15,13 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
 metadata:
-   name: rook-ceph-bucket
-# Change "rook-ceph" provisioner prefix to match the operator namespace if needed
-provisioner: rook-ceph.ceph.rook.io/bucket
-reclaimPolicy: Delete
-parameters:
-  objectStoreName: my-store
-  objectStoreNamespace: rook-ceph
+  name: rook-static-ingress-add-prefix
+  namespace: nuvolaris
+spec:
+  addPrefix:
+    prefix: /nuvolaris-ceph-bkt-910b63ee-2683-446f-a16a-2ec8f0adaf27
